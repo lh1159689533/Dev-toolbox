@@ -1,0 +1,172 @@
+.home {
+  min-height: 100vh;
+}
+
+.home-header {
+  padding: 32px 24px 20px;
+  border-bottom: 1px solid oklch(90% 0.02 160);
+  background: oklch(97% 0.01 160);
+}
+
+.home-header h1 {
+  font-size: 24px;
+  color: oklch(25% 0.02 160);
+  margin: 0;
+}
+
+.home-subtitle {
+  color: oklch(55% 0.02 160);
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.home-body {
+  display: flex;
+  gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  align-items: flex-start;
+}
+
+.home-sidebar {
+  flex-shrink: 0;
+  width: 200px;
+}
+
+.home-search input {
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid oklch(88% 0.02 160);
+  border-radius: 6px;
+  outline: none;
+  font-size: 14px;
+  color: oklch(45% 0.07 160);
+  background: oklch(96% 0.01 160);
+}
+
+.home-search input:focus {
+  border-color: oklch(50% 0.07 160);
+  box-shadow: 0 0 0 2px oklch(50% 0.07 160 / 40%);
+}
+
+.home-categories {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.home-cat {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: oklch(40% 0.02 160);
+  font-size: 14px;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.home-cat:hover {
+  background: oklch(94% 0.015 160);
+}
+
+.home-cat.active {
+  background: oklch(92% 0.04 160);
+  color: oklch(45% 0.07 160);
+  font-weight: 600;
+}
+
+.home-count {
+  font-size: 12px;
+  color: oklch(60% 0.02 160);
+  background: oklch(94% 0.015 160);
+  border-radius: 10px;
+  padding: 1px 8px;
+}
+
+.home-cat.active .home-count {
+  background: oklch(50% 0.07 160);
+  color: #fff;
+}
+
+.home-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.tool-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid oklch(92% 0.04 160);
+  border-radius: 8px;
+  background: oklch(92% 0.04 160);
+  text-align: left;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+
+.tool-external {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 14px;
+  line-height: 1;
+  color: oklch(55% 0.02 160);
+}
+
+.tool-card:hover {
+  border-color: oklch(50% 0.07 160);
+  box-shadow: 0 6px 16px oklch(20% 0.02 160 / 10%);
+  transform: translateY(-2px);
+}
+
+.tool-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tool-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  display: block;
+}
+
+.tool-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: oklch(45% 0.07 160);
+}
+
+.tool-desc {
+  font-size: 13px;
+  color: oklch(55% 0.02 160);
+  line-height: 1.5;
+}
+
+.home-empty {
+  padding: 60px 40px;
+  text-align: center;
+  color: oklch(60% 0.02 160);
+  background: transparent;
+}

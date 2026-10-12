@@ -1,0 +1,46 @@
+.btn {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid oklch(88% 0.02 160);
+  border-radius: 4px;
+  background: #fff;
+  color: oklch(30% 0.02 160);
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  border-color: oklch(50% 0.07 160);
+  color: oklch(50% 0.07 160);
+}
+
+.btn.primary {
+  background: oklch(50% 0.07 160);
+  border-color: oklch(50% 0.07 160);
+  color: #fff;
+}
+
+.btn.primary:hover {
+  background: oklch(45% 0.07 160);
+  border-color: oklch(45% 0.07 160);
+  color: #fff;
+}
+
+.btn.primary:disabled {
+  background: oklch(92% 0.04 160);
+  border-color: oklch(92% 0.04 160);
+  color: oklch(70% 0.03 160);
+  cursor: not-allowed;
+}
+
+.btn.small {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.btn.small:disabled {
+  color: oklch(75% 0.02 160);
+  border-color: oklch(92% 0.02 160);
+  cursor: not-allowed;
+}

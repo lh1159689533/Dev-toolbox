@@ -1,0 +1,167 @@
+.json-app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.json-body {
+  flex: 1;
+  display: flex;
+  gap: 16px;
+  padding: 24px;
+  align-items: stretch;
+  min-height: 0; /* 关键：允许 flex 子项收缩，使内部滚动生效 */
+}
+
+.json-pane {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid oklch(90% 0.02 160);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.json-pane-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  /* 与右侧含 .btn.small（28px）时的内容高度保持一致，确保左右下边线对齐 */
+  min-height: 48px;
+  padding: 10px 16px;
+  border-bottom: 1px solid oklch(90% 0.02 160);
+  font-size: 14px;
+  font-weight: 600;
+  color: oklch(30% 0.02 160);
+  background: oklch(97% 0.01 160);
+}
+
+.json-input {
+  flex: 1;
+  min-height: 0;
+  resize: none;
+  border: none;
+  outline: none;
+  padding: 16px;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: oklch(30% 0.02 160);
+  background: #fff;
+  white-space: pre-wrap;
+}
+
+.json-output {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.json-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+  color: oklch(60% 0.02 160);
+  font-size: 14px;
+}
+
+.json-error {
+  margin: 16px;
+  padding: 12px 16px;
+  border: 1px solid oklch(88% 0.05 25);
+  border-radius: 6px;
+  background: oklch(96% 0.02 25);
+}
+
+.json-error-title {
+  color: oklch(55% 0.12 25);
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.json-error-msg {
+  color: oklch(50% 0.08 25);
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+/* ===== JSON 树 ===== */
+.json-tree-wrap {
+  padding: 8px 0 16px;
+}
+
+.json-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 8px;
+  border-bottom: 1px solid oklch(94% 0.01 160);
+}
+
+.json-tree {
+  padding: 12px 16px;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.json-line {
+  display: flex;
+  align-items: center;
+  min-height: 22px;
+}
+
+/* 每级 2 空格的缩进，用等宽字符渲染保证对齐 */
+.json-indent {
+  white-space: pre;
+  flex-shrink: 0;
+}
+
+/* 键后的冒号+空格，防止行尾空格被折叠 */
+.json-colon {
+  white-space: pre;
+}
+
+/* 圆形 +/- 折叠图标（展开显示 −，折叠显示 +） */
+.json-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  margin: 0 4px 0 0;
+  border: 1px solid oklch(62% 0.19 25);
+  border-radius: 50%;
+  background: none;
+  padding: 0;
+  color: oklch(62% 0.19 25);
+  font-size: 12px;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.json-toggle:hover {
+  background: oklch(62% 0.19 25);
+  color: #fff;
+}
+
+.json-bracket {
+  color: oklch(50% 0.02 160);
+}
+
+.json-summary {
+  color: oklch(60% 0.02 160);
+  font-size: 12px;
+  margin-right: 6px;
+}

@@ -1,0 +1,756 @@
+.app {
+  /* header 实际高度（供统计/表头 sticky 对齐用） */
+  --header-h: 90px;
+}
+
+.app.stacked .main-body {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.app.side {
+  max-width: 100%;
+}
+
+.app.side .main-body-container {
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.app.side .main-body .commit-list {
+  max-width: 1152px;
+  align-self: end;
+  margin-right: 90px;
+}
+
+.filter {
+  background: #fff;
+  border: 1px solid oklch(90% 0.02 160);
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+/* 布局切换时的显示/隐藏（面板始终渲染，仅切换可见性，不改变文档高度） */
+.filter.hidden {
+  display: none;
+}
+
+/* 左右布局下：隐藏顶部占位面板（保留占位高度，不塌陷、不影响阈值测量），
+   避免回顶后与左侧 fixed 面板重叠遮挡 */
+.app.side .filter-stacked {
+  visibility: hidden;
+}
+
+/* 查询面板折叠把手（仅 side 模式渲染） */
+.panel-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0 0 14px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: oklch(30% 0.02 160);
+  cursor: pointer;
+}
+
+.panel-arrow {
+  display: inline-block;
+  transition: transform 0.25s ease;
+}
+
+.panel-arrow.collapsed {
+  transform: rotate(-90deg);
+}
+
+.filter-body {
+  overflow: hidden;
+  max-height: 600px;
+  opacity: 1;
+  transition:
+    max-height 0.25s ease,
+    opacity 0.2s ease,
+    margin 0.25s ease;
+}
+
+.filter.collapsed .filter-body {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* 上下布局（stacked）面板从不折叠，overflow:hidden 无作用且会截断 TAPD 项目/分支下拉列表，故放开 */
+.filter-stacked .filter-body {
+  overflow: visible;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.filter-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-grid label span {
+  color: oklch(45% 0.02 160);
+  font-size: 13px;
+}
+
+.filter-grid input,
+.filter-grid select {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid oklch(88% 0.02 160);
+  border-radius: 4px;
+  outline: none;
+  font-size: 14px;
+  color: oklch(30% 0.02 160);
+  background: #fff;
+}
+
+.filter-grid input:focus,
+.filter-grid select:focus {
+  border-color: oklch(50% 0.07 160);
+  box-shadow: 0 0 0 2px oklch(50% 0.07 160 / 40%);
+}
+
+.filter-grid select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 30px;
+  cursor: pointer;
+  /* 自定义下拉箭头（与输入框视觉统一） */
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%234d7a68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: border-color 0.2s;
+}
+
+.filter-grid select:hover {
+  border-color: oklch(50% 0.07 160);
+}
+
+.filter-grid select:disabled {
+  color: oklch(60% 0.02 160);
+  background-color: oklch(94% 0.015 160);
+  cursor: not-allowed;
+}
+
+.filter-actions {
+  margin-top: 16px;
+}
+
+.summary {
+  background: #fff;
+  padding: 10px 16px;
+  color: oklch(50% 0.02 160);
+  border-bottom: 1px solid oklch(90% 0.02 160);
+}
+
+.list-empty {
+  text-align: center;
+  color: oklch(60% 0.02 160);
+  padding: 60px 40px;
+  background: #fff;
+}
+
+.commit-list {
+  position: relative;
+  margin-top: 12px;
+  background: #fff;
+  border: 1px solid oklch(90% 0.02 160);
+  border-radius: 8px;
+  overflow: visible;
+}
+
+.list-container-side {
+  height: calc(100vh - 170px);
+  overflow: hidden;
+}
+
+.list-header,
+.commit-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 120px 160px 132px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+}
+
+/* 统计信息 + 表头整体吸顶容器 */
+.list-sticky {
+  position: sticky;
+  top: var(--header-h, 90px);
+  z-index: 10;
+  background: #fff;
+}
+
+.list-header {
+  background: oklch(94% 0.015 160);
+  color: oklch(55% 0.02 160);
+  font-size: 13px;
+  border-bottom: 1px solid oklch(90% 0.02 160);
+}
+
+.commit-row {
+  border-bottom: 1px solid oklch(94% 0.01 160);
+}
+
+.commit-row:last-child {
+  border-bottom: none;
+}
+
+.commit-row:hover {
+  background: oklch(96% 0.015 160);
+}
+
+.mono {
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
+.col-id {
+  color: oklch(48% 0.07 160);
+}
+
+.commit-link {
+  color: oklch(48% 0.07 160);
+  text-decoration: none;
+}
+
+.commit-link:hover {
+  color: oklch(52% 0.14 200);
+  text-decoration: underline;
+}
+
+.msg-title {
+  color: oklch(30% 0.02 160);
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+
+.tapd-tag {
+  display: inline-block;
+  font-size: 12px;
+  color: oklch(45% 0.06 160);
+  background: oklch(92% 0.03 160);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.tapd-tag.none {
+  color: oklch(60% 0.02 160);
+  background: oklch(94% 0.015 160);
+}
+
+/* BUG tag 标记（列表 & 弹窗共用） */
+.bug-tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  background: oklch(55% 0.16 25);
+  padding: 1px 8px;
+  border-radius: 3px;
+  border: none;
+  cursor: pointer;
+  line-height: 1.6;
+}
+
+.bug-tag:hover:not(:disabled) {
+  background: oklch(48% 0.16 25);
+}
+
+/* STORY tag 标记：需求单专属色值 */
+.bug-tag.story {
+  background: rgb(53, 130, 251);
+}
+
+.bug-tag.story:hover:not(:disabled) {
+  background: rgb(38, 108, 222);
+}
+
+.bug-tag:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.bug-tag.none {
+  color: oklch(60% 0.02 160);
+  background: oklch(94% 0.015 160);
+  font-weight: 400;
+  cursor: default;
+}
+
+.bug-id-link {
+  border: none;
+  background: none;
+  padding: 0;
+  color: oklch(48% 0.07 160);
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.bug-id-link:hover:not(:disabled) {
+  color: oklch(40% 0.07 160);
+}
+
+.bug-id-link:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+/* 弹窗 */
+.dialog-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.dialog {
+  width: 60vw;
+  height: 80vh;
+  background: #fff;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid oklch(90% 0.02 160);
+}
+
+.dialog-header h2 {
+  font-size: 16px;
+  color: oklch(25% 0.02 160);
+}
+
+.close {
+  border: none;
+  background: none;
+  font-size: 22px;
+  color: oklch(60% 0.02 160);
+  line-height: 1;
+}
+
+.close:hover {
+  color: oklch(30% 0.02 160);
+}
+
+.dialog-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.bug-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: oklch(95% 0.015 160);
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.label {
+  color: oklch(55% 0.02 160);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.bug-title {
+  flex: 1;
+  color: oklch(30% 0.02 160);
+  font-weight: 500;
+}
+
+/* bug 状态徽章（弹窗 bug 信息行） */
+.bug-status {
+  display: inline-block;
+  flex-shrink: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 1px 8px;
+  border-radius: 3px;
+}
+
+.bug-status-blue {
+  color: oklch(42% 0.12 250);
+  background: oklch(93% 0.04 250);
+}
+
+.bug-status-orange {
+  color: oklch(50% 0.13 55);
+  background: oklch(94% 0.04 55);
+}
+
+.bug-status-green {
+  color: oklch(45% 0.12 150);
+  background: oklch(93% 0.04 150);
+}
+
+.bug-status-gray {
+  color: oklch(50% 0.02 160);
+  background: oklch(92% 0.02 160);
+}
+
+.bug-status-neutral {
+  color: oklch(50% 0.05 280);
+  background: oklch(93% 0.03 280);
+}
+
+.bug-id {
+  color: oklch(48% 0.07 160);
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.field > .label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.upload-zone {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.thumb {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border: 1px solid oklch(90% 0.02 160);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  line-height: 1;
+  font-size: 14px;
+}
+
+.add-img {
+  width: 80px;
+  height: 80px;
+  border: 1px dashed oklch(88% 0.02 160);
+  border-radius: 4px;
+  background: oklch(96% 0.01 160);
+  color: oklch(55% 0.02 160);
+}
+
+.add-img:hover {
+  border-color: oklch(50% 0.07 160);
+  color: oklch(50% 0.07 160);
+}
+
+.content-textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid oklch(88% 0.02 160);
+  border-radius: 4px;
+  outline: none;
+  resize: vertical;
+  line-height: 1.6;
+  color: oklch(30% 0.02 160);
+}
+
+.content-textarea:focus {
+  border-color: oklch(50% 0.07 160);
+  box-shadow: 0 0 0 2px oklch(50% 0.07 160 / 40%);
+}
+
+/* tiptap 富文本编辑器 */
+.rich-editor {
+  min-height: 300px;
+  max-height: 800px;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid oklch(88% 0.02 160);
+  border-radius: 4px;
+  outline: none;
+  line-height: 1.6;
+  color: oklch(30% 0.02 160);
+  background: #fff;
+}
+
+.rich-editor:focus {
+  border-color: oklch(50% 0.07 160);
+  box-shadow: 0 0 0 2px oklch(50% 0.07 160 / 40%);
+}
+
+.rich-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+  margin: 4px 0;
+}
+
+/* 可缩放图片容器 */
+.resizable-image {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+}
+
+.resizable-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.resizable-image[data-selected='true'] img {
+  outline: 2px solid oklch(50% 0.07 160);
+}
+
+.resize-handle {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border: 2px solid oklch(50% 0.07 160);
+  border-radius: 50%;
+}
+
+.resize-handle-nw {
+  left: -6px;
+  top: -6px;
+  cursor: nwse-resize;
+}
+
+.resize-handle-ne {
+  right: -6px;
+  top: -6px;
+  cursor: nesw-resize;
+}
+
+.resize-handle-sw {
+  left: -6px;
+  bottom: -6px;
+  cursor: nesw-resize;
+}
+
+.resize-handle-se {
+  right: -6px;
+  bottom: -6px;
+  cursor: nwse-resize;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid oklch(90% 0.02 160);
+}
+
+/* 分支可搜索下拉 */
+.branch-select {
+  position: relative;
+}
+
+.branch-select input {
+  width: 100%;
+  cursor: pointer;
+}
+
+.branch-select.open input {
+  cursor: text;
+}
+
+.branch-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  max-height: 260px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid oklch(88% 0.02 160);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px oklch(20% 0.02 160 / 15%);
+}
+
+.branch-option {
+  padding: 8px 12px;
+  font-size: 14px;
+  color: oklch(30% 0.02 160);
+  cursor: pointer;
+  word-break: break-all;
+}
+
+.branch-option.active {
+  background: oklch(94% 0.015 160);
+}
+
+.branch-option.selected {
+  color: oklch(48% 0.07 160);
+  font-weight: 500;
+}
+
+.branch-option.hint {
+  color: oklch(55% 0.02 160);
+  font-size: 13px;
+}
+
+.branch-empty {
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: oklch(60% 0.02 160);
+}
+
+.branch-empty.branch-error {
+  color: oklch(60% 0.12 25);
+}
+
+/* 评论成功通知提示（右上角，仅手动关闭） */
+.notify-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 200;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid oklch(90% 0.02 160);
+  border-left: 4px solid oklch(50% 0.07 160);
+  border-radius: 8px;
+  box-shadow: 0 12px 32px oklch(20% 0.02 160 / 20%);
+  padding: 14px 16px;
+  max-width: 420px;
+}
+
+.notify-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.notify-text {
+  color: oklch(30% 0.02 160);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.notify-tapd-id {
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13px;
+  color: oklch(48% 0.07 160);
+  background: oklch(92% 0.03 160);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.notify-open {
+  flex-shrink: 0;
+}
+
+.notify-error {
+  color: oklch(60% 0.12 25);
+  font-size: 13px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.notify-close {
+  border: none;
+  background: none;
+  font-size: 20px;
+  line-height: 1;
+  color: oklch(60% 0.02 160);
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.notify-close:hover {
+  color: oklch(30% 0.02 160);
+}
+
+/* 列表底部加载状态 */
+.list-loading {
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: oklch(55% 0.02 160);
+  border-top: 1px solid oklch(94% 0.01 160);
+}
+
+/* ===== 左右布局（side 模式） ===== */
+/* 侧边查询面板：fixed 定位固定在视口左侧（不随滚动移动、不占文档流），左右布局时显示 */
+.filter-side {
+  position: fixed;
+  top: calc(var(--header-h, 90px) + 16px);
+  /* 与 .app 的 padding（24px）对齐 */
+  left: 72px;
+  width: 320px;
+  margin-top: 0;
+  padding: 16px;
+  z-index: 20;
+}
+
+.filter-side .filter-grid {
+  grid-template-columns: 1fr;
+}
+
+/* 左右布局下，给 commit 列表让出左侧面板空间 */
+.app.side .main-body .commit-list {
+  margin-left: 30px;
+}
+
+/* 查询加载浮层：fixed 覆盖整个视口，无论滚动到列表何处，spinner 始终在可视区域内 */
+.list-loading-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.8);
+  z-index: 201;
+}

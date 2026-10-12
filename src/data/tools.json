@@ -1,0 +1,76 @@
+[
+  {
+    "id": "tapd-comment",
+    "name": "TAPD 评论快捷回填",
+    "description": "拉取工蜂 commit → 解析 TAPD BUG单 → 回填评论",
+    "category": "开发协作",
+    "keywords": [
+      "tapd",
+      "评论",
+      "回填",
+      "commit",
+      "工蜂",
+      "git"
+    ],
+    "icon": "./public/icons/comment.svg",
+    "path": "/tools/tapd-comment",
+    "enabled": true
+  },
+  {
+    "id": "json-formatter",
+    "name": "JSON 格式化",
+    "description": "JSON字符串格式化为对象，方便查看",
+    "category": "开发协作",
+    "keywords": [
+      "json",
+      "格式化"
+    ],
+    "icon": "./public/icons/json.svg",
+    "path": "/tools/json-formatter",
+    "enabled": true
+  },
+  {
+    "id": "timestamp",
+    "name": "时间戳转换",
+    "description": "时间戳与日期相互转换",
+    "category": "开发协作",
+    "keywords": [
+      "时间戳",
+      "时间戳转换"
+    ],
+    "icon": "./public/icons/timestamp.svg",
+    "path": "/tools/timestamp",
+    "enabled": true
+  },
+  {
+    "id": "text-diff",
+    "name": "文本差异对比",
+    "description": "对比左右两个文本内容，标记出差异",
+    "category": "开发协作",
+    "keywords": [
+      "diff",
+      "对比",
+      "文本对比",
+      "差异"
+    ],
+    "icon": "./public/icons/diff.svg",
+    "path": "/tools/text-diff",
+    "enabled": true
+  },
+  {
+    "id": "json-dup-key",
+    "name": "JSON 重复 Key 检测",
+    "description": "识别 JSON 最外层对象中重复的 key，支持删除去重",
+    "category": "开发协作",
+    "keywords": [
+      "json",
+      "重复",
+      "去重",
+      "key",
+      "重复key"
+    ],
+    "icon": "./public/icons/dupkey.svg",
+    "path": "/tools/json-dup-key",
+    "enabled": true
+  }
+]

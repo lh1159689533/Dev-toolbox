@@ -1,0 +1,287 @@
+.ts-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.ts-body {
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ===== 当前时间戳卡片 ===== */
+.ts-now {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid oklch(90% 0.02 160);
+  border-radius: 8px;
+  padding: 20px 24px;
+}
+
+.ts-now-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ts-now-label {
+  color: oklch(50% 0.02 160);
+  font-size: 14px;
+}
+
+.ts-now-value {
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 26px;
+  font-weight: 600;
+  color: oklch(30% 0.02 160);
+  letter-spacing: -0.5px;
+  /* button 重置 + 可点击反馈 */
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    background 0.15s;
+}
+
+.ts-now-value:hover {
+  color: oklch(50% 0.07 160);
+  background: oklch(94% 0.02 160);
+}
+
+.ts-now-badge {
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 1px 8px;
+  border-radius: 3px;
+  color: oklch(48% 0.07 160);
+  background: oklch(92% 0.03 160);
+}
+
+.ts-now-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ts-btn-danger {
+  border-color: oklch(88% 0.05 25);
+  color: oklch(55% 0.16 25);
+}
+
+.ts-btn-danger:hover {
+  border-color: oklch(55% 0.16 25);
+  color: oklch(55% 0.16 25);
+}
+
+/* ===== Tab 切换 ===== */
+.ts-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.ts-tab {
+  height: 36px;
+  padding: 0 20px;
+  border: 1px solid oklch(88% 0.02 160);
+  border-radius: 4px;
+  background: #fff;
+  color: oklch(40% 0.02 160);
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.ts-tab:hover {
+  border-color: oklch(50% 0.07 160);
+  color: oklch(50% 0.07 160);
+}
+
+.ts-tab.active {
+  background: oklch(50% 0.07 160);
+  border-color: oklch(50% 0.07 160);
+  color: #fff;
+}
+
+/* ===== 转换卡片 ===== */
+.ts-card {
+  background: #fff;
+  border: 1px solid oklch(90% 0.02 160);
+  border-radius: 8px;
+  padding: 20px 24px;
+}
+
+.ts-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: oklch(30% 0.02 160);
+  margin: 0 0 16px;
+  display: inline-flex;
+  gap: 4px;
+}
+
+.ts-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.ts-row + .ts-row {
+  margin-top: 12px;
+}
+
+.ts-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ts-field > span {
+  color: oklch(45% 0.02 160);
+  font-size: 13px;
+}
+
+.ts-field-grow {
+  flex: 1;
+  min-width: 200px;
+}
+
+.ts-field-actions {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.ts-input {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid oklch(88% 0.02 160);
+  border-radius: 4px;
+  outline: none;
+  font-size: 14px;
+  color: oklch(30% 0.02 160);
+  background: #fff;
+}
+
+.ts-input:focus {
+  border-color: oklch(50% 0.07 160);
+  box-shadow: 0 0 0 2px oklch(50% 0.07 160 / 40%);
+}
+
+.ts-input[readonly] {
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  background: oklch(97% 0.01 160);
+  color: oklch(35% 0.02 160);
+}
+
+.ts-input-error {
+  border-color: oklch(88% 0.05 25);
+  color: oklch(55% 0.12 25);
+}
+
+select.ts-input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 30px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%234d7a68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.ts-textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 10px 12px;
+  border: 1px solid oklch(88% 0.02 160);
+  border-radius: 4px;
+  outline: none;
+  resize: vertical;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  color: oklch(30% 0.02 160);
+  background: #fff;
+}
+
+.ts-textarea:focus {
+  border-color: oklch(50% 0.07 160);
+  box-shadow: 0 0 0 2px oklch(50% 0.07 160 / 40%);
+}
+
+/* ===== 批量转换结果（对照列表） ===== */
+.ts-batch-result {
+  margin-top: 16px;
+  border: 1px solid oklch(90% 0.02 160);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.ts-batch-result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid oklch(90% 0.02 160);
+  background: oklch(97% 0.01 160);
+  color: oklch(45% 0.02 160);
+  font-size: 13px;
+}
+
+.ts-batch-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.ts-batch-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid oklch(94% 0.01 160);
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
+.ts-batch-row:last-child {
+  border-bottom: none;
+}
+
+.ts-batch-row:hover {
+  background: oklch(96% 0.015 160);
+}
+
+.ts-batch-raw {
+  color: oklch(45% 0.02 160);
+  word-break: break-all;
+}
+
+.ts-batch-arrow {
+  color: oklch(60% 0.02 160);
+  text-align: center;
+}
+
+.ts-batch-val {
+  color: oklch(30% 0.02 160);
+  word-break: break-all;
+}
+
+.ts-batch-invalid {
+  color: oklch(55% 0.12 25);
+}

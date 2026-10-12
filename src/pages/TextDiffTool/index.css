@@ -1,0 +1,150 @@
+.diff-app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.diff-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 24px;
+  border-bottom: 1px solid oklch(90% 0.02 160);
+  background: oklch(98% 0.01 160);
+}
+
+.diff-stats {
+  display: flex;
+  gap: 18px;
+  font-size: 13px;
+}
+
+.diff-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.diff-stat-added {
+  color: oklch(50% 0.12 150);
+}
+.diff-stat-removed {
+  color: oklch(55% 0.16 25);
+}
+.diff-stat-modified {
+  color: oklch(50% 0.11 60);
+}
+
+.diff-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.diff-body {
+  flex: 1;
+  display: flex;
+  gap: 16px;
+  padding: 16px 24px 24px;
+  min-height: 0;
+}
+
+.diff-pane {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid oklch(90% 0.02 160);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.diff-pane-title {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-bottom: 1px solid oklch(90% 0.02 160);
+  font-size: 13px;
+  font-weight: 600;
+  color: oklch(30% 0.02 160);
+  background: oklch(97% 0.01 160);
+}
+
+.diff-editor {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+/* textarea（前景）与 backdrop（背景高亮层）必须保持完全一致的字体度量，才能逐字符对齐 */
+.diff-backdrop,
+.diff-input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 16px;
+  box-sizing: border-box;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 20px;
+  white-space: pre;
+  tab-size: 8;
+  letter-spacing: normal;
+  word-spacing: normal;
+  border: none;
+}
+
+.diff-backdrop {
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  color: transparent;
+  background: #fff;
+}
+
+.diff-input {
+  z-index: 1;
+  overflow: auto;
+  resize: none;
+  outline: none;
+  color: oklch(30% 0.02 160);
+  background: transparent;
+  caret-color: oklch(30% 0.02 160);
+}
+
+.diff-input::placeholder {
+  color: oklch(68% 0.02 160);
+}
+
+.diff-line {
+  height: 20px;
+  min-width: max-content;
+}
+
+.diff-line-removed {
+  background: rgba(255, 120, 120, 0.14);
+}
+.diff-line-added {
+  background: rgba(90, 200, 120, 0.16);
+}
+.diff-line-modified-left {
+  background: rgba(255, 120, 120, 0.12);
+}
+.diff-line-modified-right {
+  background: rgba(90, 200, 120, 0.14);
+}
+
+/* 当前跳转定位到的差异块，用内边框高亮提示 */
+.diff-line-active {
+  box-shadow: inset 0 0 0 1px oklch(52% 0.12 240 / 70%);
+}
+
+.diff-ins-removed {
+  background: rgba(255, 120, 120, 0.5);
+}
+.diff-ins-added {
+  background: rgba(90, 200, 120, 0.5);
+}

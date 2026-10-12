@@ -1,0 +1,39 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: oklch(97% 0.01 160);
+  border-bottom: 1px solid oklch(90% 0.02 160);
+  padding: 16px 24px;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.back-link {
+  font-size: 20px;
+  color: oklch(48% 0.07 160);
+  text-decoration: none;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.back-link:hover {
+  color: oklch(40% 0.07 160);
+  text-decoration: underline;
+}
+
+.header h1 {
+  font-size: 22px;
+  color: oklch(25% 0.02 160);
+  margin: 0;
+}
+
+.header .subtitle {
+  color: oklch(55% 0.02 160);
+  margin-top: 6px;
+  margin-bottom: 0;
+}
