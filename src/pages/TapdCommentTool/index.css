@@ -105,46 +105,6 @@
   font-size: 13px;
 }
 
-.filter-grid input,
-.filter-grid select {
-  height: 36px;
-  padding: 0 10px;
-  border: 1px solid oklch(88% 0.02 160);
-  border-radius: 4px;
-  outline: none;
-  font-size: 14px;
-  color: oklch(30% 0.02 160);
-  background: #fff;
-}
-
-.filter-grid input:focus,
-.filter-grid select:focus {
-  border-color: oklch(50% 0.07 160);
-  box-shadow: 0 0 0 2px oklch(50% 0.07 160 / 40%);
-}
-
-.filter-grid select {
-  appearance: none;
-  -webkit-appearance: none;
-  padding-right: 30px;
-  cursor: pointer;
-  /* 自定义下拉箭头（与输入框视觉统一） */
-  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%234d7a68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  transition: border-color 0.2s;
-}
-
-.filter-grid select:hover {
-  border-color: oklch(50% 0.07 160);
-}
-
-.filter-grid select:disabled {
-  color: oklch(60% 0.02 160);
-  background-color: oklch(94% 0.015 160);
-  cursor: not-allowed;
-}
-
 .filter-actions {
   margin-top: 16px;
 }
@@ -582,67 +542,6 @@
   gap: 12px;
   padding: 16px 20px;
   border-top: 1px solid oklch(90% 0.02 160);
-}
-
-/* 分支可搜索下拉 */
-.branch-select {
-  position: relative;
-}
-
-.branch-select input {
-  width: 100%;
-  cursor: pointer;
-}
-
-.branch-select.open input {
-  cursor: text;
-}
-
-.branch-dropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  z-index: 50;
-  max-height: 260px;
-  overflow-y: auto;
-  background: #fff;
-  border: 1px solid oklch(88% 0.02 160);
-  border-radius: 4px;
-  box-shadow: 0 8px 24px oklch(20% 0.02 160 / 15%);
-}
-
-.branch-option {
-  padding: 8px 12px;
-  font-size: 14px;
-  color: oklch(30% 0.02 160);
-  cursor: pointer;
-  word-break: break-all;
-}
-
-.branch-option.active {
-  background: oklch(94% 0.015 160);
-}
-
-.branch-option.selected {
-  color: oklch(48% 0.07 160);
-  font-weight: 500;
-}
-
-.branch-option.hint {
-  color: oklch(55% 0.02 160);
-  font-size: 13px;
-}
-
-.branch-empty {
-  padding: 12px;
-  text-align: center;
-  font-size: 13px;
-  color: oklch(60% 0.02 160);
-}
-
-.branch-empty.branch-error {
-  color: oklch(60% 0.12 25);
 }
 
 /* 评论成功通知提示（右上角，仅手动关闭） */

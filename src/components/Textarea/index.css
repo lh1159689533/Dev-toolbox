@@ -1,0 +1,23 @@
+.td-textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 10px 12px;
+  border: 1px solid var(--td-border);
+  border-radius: var(--td-radius);
+  outline: none;
+  resize: vertical;
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  font-size: var(--td-font-size-md);
+  line-height: 1.7;
+  color: var(--td-text);
+  background: var(--td-bg);
+}
+
+.td-textarea:focus {
+  border-color: var(--td-primary);
+  box-shadow: var(--td-focus-ring);
+}
+
+.td-textarea.small {
+  font-size: 12px;
+}

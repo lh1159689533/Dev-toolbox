@@ -1,0 +1,669 @@
+import {
+  RpaCommandType,
+  RpaMessageType,
+  RpaRunStatus,
+  DEFAULT_RPA_CONFIG,
+  DEFAULT_RPA_RUN_STATE,
+} from '../shared/rpa-types';
+import type { RpaCommand, RpaCommandResult, RpaConfig, RpaMacro, RpaRunState } from '../shared/rpa-types';
+import { generateFromRegexLiteral, isRegexLiteral } from '../shared/regex-random';
+
+/** 可能触发「新开 tab」的事件（执行后需要检测并切换到新 tab） */
+const NEW_TAB_TRIGGER_COMMANDS = new Set(['click', 'clickAt', 'doubleClick', 'rightClick']);
+
+/** 输入类事件：value 支持 /正则/ 字面量，回放时随机生成 */
+const INPUT_COMMANDS = new Set([RpaCommandType.Type, RpaCommandType.SendKeys]);
+
+/** 速度到延迟的映射（speed 1-10） */
+function speedToDelay(speed: number): number {
+  // speed 1 = 2000ms, speed 5 = 300ms, speed 10 = 0ms
+  return Math.max(0, Math.round(2000 * Math.pow(0.7, speed - 1)));
+}
+
+/**
+ * RPA 回放引擎（Background 端）
+ * 负责协调 Content Script 执行事件，管理运行状态、变量、循环
+ */
+export class RpaPlaybackEngine {
+  private state: RpaRunState = { ...DEFAULT_RPA_RUN_STATE };
+  private config: RpaConfig = { ...DEFAULT_RPA_CONFIG };
+  private macro: RpaMacro | null = null;
+  private abortController: AbortController | null = null;
+  private onStateChange?: (state: RpaRunState) => void;
+
+  constructor(onStateChange?: (state: RpaRunState) => void) {
+    this.onStateChange = onStateChange;
+  }
+
+  /** 获取当前状态 */
+  getState(): RpaRunState {
+    return { ...this.state };
+  }
+
+  /** 开始回放 */
+  async start(macro: RpaMacro, tabId: number): Promise<void> {
+    if (this.state.status === RpaRunStatus.Running) {
+      throw new Error('Playback is already running');
+    }
+
+    this.config = { ...DEFAULT_RPA_CONFIG, speed: macro.speed ?? DEFAULT_RPA_CONFIG.speed };
+    this.macro = macro;
+    this.abortController = new AbortController();
+
+    this.state = {
+      status: RpaRunStatus.Running,
+      macroId: macro.id,
+      currentCommandIndex: 0,
+      results: [],
+      startTime: Date.now(),
+      variables: {},
+      loopStack: [],
+      tabId,
+    };
+    this.notifyStateChange();
+
+    try {
+      await this.executeLoop();
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') {
+        this.state.status = RpaRunStatus.Stopped;
+      } else {
+        this.state.status = RpaRunStatus.Error;
+        this.state.error = (error as Error).message;
+      }
+    } finally {
+      this.state.endTime = Date.now();
+      if (this.state.status === RpaRunStatus.Running) {
+        this.state.status = RpaRunStatus.Completed;
+      }
+      this.notifyStateChange();
+      await this.notifyContentProgress();
+    }
+  }
+
+  /** 停止回放 */
+  stop(): void {
+    this.abortController?.abort();
+    this.state.status = RpaRunStatus.Stopped;
+    this.notifyStateChange();
+    void this.notifyContentProgress();
+  }
+
+  /** 暂停回放 */
+  pause(): void {
+    if (this.state.status === RpaRunStatus.Running) {
+      this.state.status = RpaRunStatus.Paused;
+      this.notifyStateChange();
+      void this.notifyContentProgress();
+    }
+  }
+
+  /** 恢复回放 */
+  resume(): void {
+    if (this.state.status === RpaRunStatus.Paused) {
+      this.state.status = RpaRunStatus.Running;
+      this.notifyStateChange();
+      void this.notifyContentProgress();
+    }
+  }
+
+  /** 单步执行 */
+  async step(macro: RpaMacro, tabId: number): Promise<void> {
+    if (this.state.status === RpaRunStatus.Idle) {
+      this.config = { ...DEFAULT_RPA_CONFIG, speed: macro.speed ?? DEFAULT_RPA_CONFIG.speed };
+      this.macro = macro;
+      this.state = {
+        ...DEFAULT_RPA_RUN_STATE,
+        status: RpaRunStatus.Paused,
+        macroId: macro.id,
+        currentCommandIndex: 0,
+        startTime: Date.now(),
+        tabId,
+      };
+    }
+
+    if (!this.macro) return;
+
+    const idx = this.state.currentCommandIndex;
+    if (idx >= this.macro.commands.length) {
+      this.state.status = RpaRunStatus.Completed;
+      this.state.endTime = Date.now();
+      this.notifyStateChange();
+      return;
+    }
+
+    const cmd = this.macro.commands[idx];
+    const result = await this.executeCommand(cmd, idx);
+    this.state.results.push(result);
+
+    const nextIdx = this.getNextCommandIndex(cmd, idx, result);
+    this.state.currentCommandIndex = nextIdx;
+    this.notifyStateChange();
+  }
+
+  /** 主执行循环 */
+  private async executeLoop(): Promise<void> {
+    if (!this.macro) return;
+
+    while (this.state.currentCommandIndex < this.macro.commands.length) {
+      if (this.abortController?.signal.aborted) {
+        throw new DOMException('Playback aborted', 'AbortError');
+      }
+
+      while (this.state.status === RpaRunStatus.Paused) {
+        await this.sleep(100);
+        if (this.abortController?.signal.aborted) {
+          throw new DOMException('Playback aborted', 'AbortError');
+        }
+      }
+
+      const idx = this.state.currentCommandIndex;
+      const cmd = this.macro.commands[idx];
+
+      this.notifyStateChange();
+      await this.notifyContentProgress(cmd);
+
+      const result = await this.executeCommand(cmd, idx);
+      this.state.results.push(result);
+
+      if (!result.success && !cmd.command.startsWith('verify')) {
+        this.state.status = RpaRunStatus.Error;
+        this.state.error = result.error;
+        return;
+      }
+
+      const nextIdx = this.getNextCommandIndex(cmd, idx, result);
+      this.state.currentCommandIndex = nextIdx;
+
+      const delay =
+        cmd.delay !== undefined && cmd.delay >= 0 ? cmd.delay : speedToDelay(this.config.speed);
+      if (delay > 0) {
+        await this.sleep(delay);
+      }
+    }
+  }
+
+  /** 执行单条事件 */
+  private async executeCommand(cmd: RpaCommand, index: number): Promise<RpaCommandResult> {
+    const startTime = Date.now();
+
+    try {
+      const processedCmd = this.replaceVariables(cmd);
+
+      if (this.isFlowControlCommand(processedCmd.command as RpaCommandType)) {
+        return this.handleFlowControl(processedCmd, index, startTime);
+      }
+
+      if (this.isBackgroundCommand(processedCmd.command as RpaCommandType)) {
+        return await this.handleBackgroundCommand(processedCmd, index, startTime);
+      }
+
+      // 对可能「新开 tab」的事件，先注册新 tab 监听（避免同步 window.open 漏事件），再执行并等待
+      let followNewTab: Promise<void> | null = null;
+      if (NEW_TAB_TRIGGER_COMMANDS.has(processedCmd.command)) {
+        const beforeTabIds = new Set(
+          (await chrome.tabs.query({ currentWindow: true }))
+            .map((t) => t.id)
+            .filter((id): id is number => id !== undefined),
+        );
+        followNewTab = this.maybeFollowNewTab(beforeTabIds);
+      }
+
+      const result = await this.sendToContentScript(processedCmd);
+
+      if (followNewTab) {
+        await followNewTab;
+      }
+
+      if (processedCmd.command.startsWith('store') && result.storedValue !== undefined) {
+        const varName = processedCmd.value || processedCmd.target;
+        this.state.variables[varName] = result.storedValue;
+      }
+
+      return {
+        index,
+        command: cmd,
+        success: result.success,
+        duration: Date.now() - startTime,
+        error: result.error,
+        storedValue: result.storedValue,
+      };
+    } catch (error) {
+      return {
+        index,
+        command: cmd,
+        success: false,
+        duration: Date.now() - startTime,
+        error: (error as Error).message,
+      };
+    }
+  }
+
+  /** 向 Content Script 发送事件执行请求 */
+  private async sendToContentScript(cmd: RpaCommand): Promise<{
+    success: boolean;
+    error?: string;
+    storedValue?: string;
+  }> {
+    const tabId = this.state.tabId;
+    if (!tabId) {
+      throw new Error('No active tab');
+    }
+
+    try {
+      const response = await chrome.tabs.sendMessage(tabId, {
+        type: RpaMessageType.EXECUTE_COMMAND,
+        payload: {
+          command: cmd.command,
+          target: cmd.target,
+          value: cmd.value,
+          timeout: this.config.elementTimeout,
+        },
+      });
+      return (
+        (response as { success: boolean; error?: string; storedValue?: string }) || {
+          success: false,
+          error: 'No response',
+        }
+      );
+    } catch (e) {
+      throw new Error(chrome.runtime.lastError?.message || (e as Error).message);
+    }
+  }
+
+  /** 检测事件执行后是否新开了 tab，若新开则等待加载完成并切换当前 tab */
+  private async maybeFollowNewTab(beforeTabIds: Set<number>): Promise<void> {
+    const newTab = await new Promise<chrome.tabs.Tab | null>((resolve) => {
+      let settled = false;
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      let listener: ((tab: chrome.tabs.Tab) => void) | null = null;
+
+      const cleanup = () => {
+        if (timer !== null) clearTimeout(timer);
+        if (listener) chrome.tabs.onCreated.removeListener(listener);
+      };
+
+      timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(null);
+      }, 1500);
+
+      listener = (tab: chrome.tabs.Tab) => {
+        if (tab.id !== undefined && !beforeTabIds.has(tab.id)) {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          resolve(tab);
+        }
+      };
+
+      chrome.tabs.onCreated.addListener(listener);
+    });
+
+    if (!newTab?.id) return;
+
+    // 等待新 tab 加载完成（超时抛错，由上层按事件失败处理）
+    const current = await chrome.tabs.get(newTab.id);
+    if (current.status !== 'complete') {
+      await this.waitForTabComplete(newTab.id);
+    }
+
+    // 通知旧 tab：回放已转移到新标签页，清理其进度指示器并提示
+    const prevTabId = this.state.tabId;
+    if (prevTabId && prevTabId !== newTab.id) {
+      void chrome.tabs
+        .sendMessage(prevTabId, {
+          type: RpaMessageType.PLAYBACK_PROGRESS,
+          payload: {
+            status: RpaRunStatus.Idle,
+            currentIndex: this.state.currentCommandIndex,
+            totalCommands: this.macro?.commands.length ?? 0,
+            commandName: '',
+            commandTarget: '',
+            macroName: this.macro?.name ?? '',
+          },
+        })
+        .catch(() => {
+          // 旧 tab 可能已关闭
+        });
+      void chrome.tabs
+        .sendMessage(prevTabId, {
+          type: RpaMessageType.SHOW_PAGE_TOAST,
+          payload: { text: '回放已切换到新标签页', kind: 'info' },
+        })
+        .catch(() => {});
+    }
+
+    this.state.tabId = newTab.id;
+    this.notifyStateChange();
+  }
+
+  /** 处理 Background 端事件（open, goBack 等） */
+  private async handleBackgroundCommand(cmd: RpaCommand, index: number, startTime: number): Promise<RpaCommandResult> {
+    const tabId = this.state.tabId;
+
+    switch (cmd.command) {
+      case RpaCommandType.Open: {
+        let url = cmd.target;
+        if (url.startsWith('/')) {
+          const tab = await chrome.tabs.get(tabId!);
+          const origin = new URL(tab.url!).origin;
+          url = origin + url;
+        }
+        await chrome.tabs.update(tabId!, { url });
+        await this.waitForTabComplete(tabId!);
+        await this.notifyContentProgress(cmd);
+        return { index, command: cmd, success: true, duration: Date.now() - startTime };
+      }
+
+      case RpaCommandType.GoBack:
+        await chrome.tabs.goBack(tabId!);
+        await this.waitForTabComplete(tabId!);
+        await this.notifyContentProgress(cmd);
+        return { index, command: cmd, success: true, duration: Date.now() - startTime };
+
+      case RpaCommandType.GoForward:
+        await chrome.tabs.goForward(tabId!);
+        await this.waitForTabComplete(tabId!);
+        await this.notifyContentProgress(cmd);
+        return { index, command: cmd, success: true, duration: Date.now() - startTime };
+
+      case RpaCommandType.Refresh:
+        await chrome.tabs.reload(tabId!);
+        await this.waitForTabComplete(tabId!);
+        await this.notifyContentProgress(cmd);
+        return { index, command: cmd, success: true, duration: Date.now() - startTime };
+
+      case RpaCommandType.Pause: {
+        const ms = parseInt(cmd.target || cmd.value, 10) || 1000;
+        await this.sleep(ms);
+        return { index, command: cmd, success: true, duration: Date.now() - startTime };
+      }
+
+      case RpaCommandType.Echo:
+        return {
+          index,
+          command: cmd,
+          success: true,
+          duration: Date.now() - startTime,
+          storedValue: cmd.target,
+        };
+
+      case RpaCommandType.Store:
+        this.state.variables[cmd.value] = cmd.target;
+        return {
+          index,
+          command: cmd,
+          success: true,
+          duration: Date.now() - startTime,
+          storedValue: cmd.target,
+        };
+
+      case RpaCommandType.CaptureScreenshot: {
+        const dataUrl = await chrome.tabs.captureVisibleTab(undefined as unknown as number, {
+          format: 'png',
+        });
+        return {
+          index,
+          command: cmd,
+          success: true,
+          duration: Date.now() - startTime,
+          screenshot: dataUrl,
+        };
+      }
+
+      default:
+        return {
+          index,
+          command: cmd,
+          success: false,
+          duration: Date.now() - startTime,
+          error: `Unknown background command: ${cmd.command}`,
+        };
+    }
+  }
+
+  /** 处理流程控制 */
+  private handleFlowControl(cmd: RpaCommand, index: number, startTime: number): RpaCommandResult {
+    return { index, command: cmd, success: true, duration: Date.now() - startTime };
+  }
+
+  /** 计算下一条事件索引 */
+  private getNextCommandIndex(cmd: RpaCommand, currentIdx: number, _result: RpaCommandResult): number {
+    switch (cmd.command) {
+      case RpaCommandType.Times: {
+        const times = parseInt(cmd.target, 10) || 0;
+        this.state.loopStack.push({
+          type: 'times',
+          startIndex: currentIdx,
+          currentIteration: 0,
+          maxIterations: times,
+        });
+        return currentIdx + 1;
+      }
+
+      case RpaCommandType.While: {
+        const conditionMet = this.evaluateCondition(cmd.target);
+        if (conditionMet) {
+          this.state.loopStack.push({
+            type: 'while',
+            startIndex: currentIdx,
+            currentIteration: 0,
+            condition: cmd.target,
+          });
+          return currentIdx + 1;
+        }
+        return this.findMatchingEnd(currentIdx) + 1;
+      }
+
+      case RpaCommandType.End: {
+        const loop = this.state.loopStack[this.state.loopStack.length - 1];
+        if (!loop) return currentIdx + 1;
+
+        if (loop.type === 'times') {
+          loop.currentIteration++;
+          if (loop.currentIteration < (loop.maxIterations ?? 0)) {
+            return loop.startIndex + 1;
+          }
+          this.state.loopStack.pop();
+          return currentIdx + 1;
+        }
+
+        if (loop.type === 'while') {
+          if (this.evaluateCondition(loop.condition ?? '')) {
+            loop.currentIteration++;
+            return loop.startIndex + 1;
+          }
+          this.state.loopStack.pop();
+          return currentIdx + 1;
+        }
+
+        return currentIdx + 1;
+      }
+
+      case RpaCommandType.If: {
+        const conditionMet = this.evaluateCondition(cmd.target);
+        if (conditionMet) {
+          return currentIdx + 1;
+        }
+        return this.findNextElseOrEnd(currentIdx) + 1;
+      }
+
+      case RpaCommandType.Else:
+      case RpaCommandType.ElseIf:
+        return this.findMatchingEnd(currentIdx) + 1;
+
+      default:
+        return currentIdx + 1;
+    }
+  }
+
+  /** 查找匹配的 end 事件 */
+  private findMatchingEnd(fromIdx: number): number {
+    if (!this.macro) return fromIdx + 1;
+    let depth = 1;
+    for (let i = fromIdx + 1; i < this.macro.commands.length; i++) {
+      const c = this.macro.commands[i].command;
+      if (c === RpaCommandType.If || c === RpaCommandType.Times || c === RpaCommandType.While) {
+        depth++;
+      } else if (c === RpaCommandType.End) {
+        depth--;
+        if (depth === 0) return i;
+      }
+    }
+    return this.macro.commands.length;
+  }
+
+  /** 查找下一个 else/elseIf/end */
+  private findNextElseOrEnd(fromIdx: number): number {
+    if (!this.macro) return fromIdx + 1;
+    let depth = 0;
+    for (let i = fromIdx + 1; i < this.macro.commands.length; i++) {
+      const c = this.macro.commands[i].command;
+      if (c === RpaCommandType.If || c === RpaCommandType.Times || c === RpaCommandType.While) {
+        depth++;
+      } else if (c === RpaCommandType.End) {
+        if (depth === 0) return i;
+        depth--;
+      } else if (depth === 0 && (c === RpaCommandType.Else || c === RpaCommandType.ElseIf)) {
+        return i;
+      }
+    }
+    return this.macro.commands.length;
+  }
+
+  /** 评估条件表达式 */
+  private evaluateCondition(condition: string): boolean {
+    const processed = this.replaceVariableString(condition);
+    try {
+      const match = processed.match(/^(.+?)\s*(==|!=|>=|<=|>|<)\s*(.+)$/);
+      if (match) {
+        const [, left, op, right] = match;
+        const l = left.trim();
+        const r = right.trim();
+        switch (op) {
+          case '==':
+            return l === r;
+          case '!=':
+            return l !== r;
+          case '>':
+            return Number(l) > Number(r);
+          case '<':
+            return Number(l) < Number(r);
+          case '>=':
+            return Number(l) >= Number(r);
+          case '<=':
+            return Number(l) <= Number(r);
+        }
+      }
+      return processed.trim() !== '' && processed.trim() !== 'false' && processed.trim() !== '0';
+    } catch {
+      return false;
+    }
+  }
+
+  /** 变量替换 */
+  private replaceVariables(cmd: RpaCommand): RpaCommand {
+    return {
+      ...cmd,
+      target: this.replaceVariableString(cmd.target),
+      value: this.resolveValue(cmd),
+    };
+  }
+
+  /** 解析事件 value：输入类事件的 /正则/ 字面量随机生成，否则走 ${varName} 变量替换 */
+  private resolveValue(cmd: RpaCommand): string {
+    if (INPUT_COMMANDS.has(cmd.command as RpaCommandType) && isRegexLiteral(cmd.value)) {
+      return generateFromRegexLiteral(cmd.value);
+    }
+    return this.replaceVariableString(cmd.value);
+  }
+
+  /** 替换字符串中的 ${varName} 变量 */
+  private replaceVariableString(str: string): string {
+    if (!str) return str;
+    return str.replace(/\$\{(\w+)\}/g, (_, varName) => {
+      return this.state.variables[varName] ?? `\${${varName}}`;
+    });
+  }
+
+  /** 判断是否流程控制事件 */
+  private isFlowControlCommand(cmd: RpaCommandType): boolean {
+    return [
+      RpaCommandType.If,
+      RpaCommandType.Else,
+      RpaCommandType.ElseIf,
+      RpaCommandType.End,
+      RpaCommandType.Times,
+      RpaCommandType.While,
+    ].includes(cmd);
+  }
+
+  /** 判断是否 Background 端事件 */
+  private isBackgroundCommand(cmd: RpaCommandType): boolean {
+    return [
+      RpaCommandType.Open,
+      RpaCommandType.GoBack,
+      RpaCommandType.GoForward,
+      RpaCommandType.Refresh,
+      RpaCommandType.Pause,
+      RpaCommandType.Echo,
+      RpaCommandType.Store,
+      RpaCommandType.CaptureScreenshot,
+    ].includes(cmd);
+  }
+
+  /** 等待标签页加载完成 */
+  private waitForTabComplete(tabId: number): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        chrome.tabs.onUpdated.removeListener(listener);
+        reject(new Error('Page load timeout'));
+      }, this.config.pageLoadTimeout);
+
+      const listener = (updatedTabId: number, info: { status?: string }) => {
+        if (updatedTabId === tabId && info.status === 'complete') {
+          clearTimeout(timeout);
+          chrome.tabs.onUpdated.removeListener(listener);
+          setTimeout(resolve, 500);
+        }
+      };
+
+      chrome.tabs.onUpdated.addListener(listener);
+    });
+  }
+
+  /** sleep 工具 */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /** 通知状态变化 */
+  private notifyStateChange(): void {
+    this.onStateChange?.({ ...this.state });
+  }
+
+  /** 向 Content Script 发送回放进度，驱动页面端指示器 */
+  private async notifyContentProgress(cmd?: RpaCommand): Promise<void> {
+    const tabId = this.state.tabId;
+    if (!tabId || !this.macro) return;
+    try {
+      await chrome.tabs.sendMessage(tabId, {
+        type: RpaMessageType.PLAYBACK_PROGRESS,
+        payload: {
+          status: this.state.status,
+          currentIndex: this.state.currentCommandIndex,
+          totalCommands: this.macro.commands.length,
+          commandName: cmd?.command || '',
+          commandTarget: cmd?.target || '',
+          macroName: this.macro.name,
+          error: this.state.error,
+        },
+      });
+    } catch {
+      // tab 可能已关闭或 content script 未注入，静默忽略
+    }
+  }
+}

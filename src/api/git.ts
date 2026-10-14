@@ -1,4 +1,8 @@
 import type { CommitQuery, CommitRecord, GitBranch, GitlabCommit, TapdRef } from '../types';
+import { proxyFetch } from './client';
+
+/** 工蜂 OpenAPI v3 基础地址（原 vite proxy /git-api 的转发目标） */
+const GIT_API_BASE = 'https://git.woa.com/api/v3';
 
 /** 从 commit message 中解析 TAPD 关联：优先 --story=，否则回退 --bug= */
 export function parseTapdRef(message: string): TapdRef | undefined {
@@ -74,9 +78,9 @@ export async function fetchCommits(query: CommitQuery, page = 1, perPage = 100):
   params.set('page', String(page));
   params.set('per_page', String(perPage));
 
-  const url = `/git-api/projects/${encodeProjectPath(projectPath)}/repository/commits?${params.toString()}`;
+  const url = `${GIT_API_BASE}/projects/${encodeProjectPath(projectPath)}/repository/commits?${params.toString()}`;
 
-  const res = await fetch(url);
+  const res = await proxyFetch(url);
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`工蜂接口请求失败 (${res.status}): ${text}`);
@@ -123,9 +127,9 @@ export async function fetchBranches(projectPath: string, search: string, signal?
   params.set('order_by', 'updated_at');
   params.set('sort', 'desc');
 
-  const url = `/git-api/projects/${encodeProjectPath(projectPath)}/repository/branches?${params.toString()}`;
+  const url = `${GIT_API_BASE}/projects/${encodeProjectPath(projectPath)}/repository/branches?${params.toString()}`;
 
-  const res = await fetch(url, { signal });
+  const res = await proxyFetch(url, { signal });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`分支接口请求失败 (${res.status}): ${text}`);

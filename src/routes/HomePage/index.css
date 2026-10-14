@@ -36,19 +36,6 @@
 
 .home-search input {
   width: 100%;
-  height: 36px;
-  padding: 0 10px;
-  border: 1px solid oklch(88% 0.02 160);
-  border-radius: 6px;
-  outline: none;
-  font-size: 14px;
-  color: oklch(45% 0.07 160);
-  background: oklch(96% 0.01 160);
-}
-
-.home-search input:focus {
-  border-color: oklch(50% 0.07 160);
-  box-shadow: 0 0 0 2px oklch(50% 0.07 160 / 40%);
 }
 
 .home-categories {

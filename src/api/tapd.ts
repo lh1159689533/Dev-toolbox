@@ -1,6 +1,8 @@
 import type { TapdBug, TapdType, TapdWorkspace } from '../types';
+import { proxyFetch } from './client';
 
-const TAPD_BASE = '/tapd-api';
+/** TAPD OpenAPI 基础地址（原 vite proxy /tapd-api 的转发目标） */
+const TAPD_BASE = 'http://apiv2.tapd.woa.com';
 
 export function getType(type: TapdType) {
   return type === 'story' ? 'stories' : 'bugs';
@@ -19,7 +21,7 @@ export async function resolveDetailUrl(workspaceId: string, id: string, type: Ta
 
 /** 获取当前用户参与的项目列表（仅支持 OAuth Access Token） */
 export async function fetchWorkspaces(): Promise<TapdWorkspace[]> {
-  const res = await fetch(`${TAPD_BASE}/workspaces/get_participant_projects`);
+  const res = await proxyFetch(`${TAPD_BASE}/workspaces/get_participant_projects`);
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`TAPD 项目列表获取失败 (${res.status}): ${text}`);
@@ -52,7 +54,7 @@ export async function resolveLongId(workspaceId: string, id: string, type: TapdT
   params.set('short_id', id);
   params.set('workspace_id', workspaceId);
 
-  const res = await fetch(`${TAPD_BASE}/shard_id?${params.toString()}`);
+  const res = await proxyFetch(`${TAPD_BASE}/shard_id?${params.toString()}`);
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`TAPD ID 转换失败 (${res.status}): ${text}`);
@@ -82,7 +84,7 @@ export async function fetchTapdInfo(workspaceId: string, id: string, type: TapdT
   // bug 标题字段为 title，story 标题字段为 name
   params.set('fields', type === 'bug' ? 'id,title,status' : 'id,name,status');
 
-  const res = await fetch(`${TAPD_BASE}/${getType(type)}?${params.toString()}`);
+  const res = await proxyFetch(`${TAPD_BASE}/${getType(type)}?${params.toString()}`);
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`TAPD 查询失败 (${res.status}): ${text}`);
@@ -105,7 +107,7 @@ export async function uploadImage(workspaceId: string, file: File): Promise<stri
   form.append('workspace_id', workspaceId);
   form.append('image', file);
 
-  const res = await fetch(`${TAPD_BASE}/files/upload_image`, {
+  const res = await proxyFetch(`${TAPD_BASE}/files/upload_image`, {
     method: 'POST',
     body: form,
   });
@@ -137,7 +139,7 @@ export async function fetchStatusOptions(workspaceId: string, type: TapdType): P
   const params = new URLSearchParams();
   params.set('workspace_id', workspaceId);
 
-  const res = await fetch(`${TAPD_BASE}/${getType(type)}/get_fields_info?${params.toString()}`);
+  const res = await proxyFetch(`${TAPD_BASE}/${getType(type)}/get_fields_info?${params.toString()}`);
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`TAPD 状态字段获取失败 (${res.status}): ${text}`);
@@ -169,7 +171,7 @@ export async function addComment(params: {
   form.set('description', params.description);
   form.set('author', params.author);
 
-  const res = await fetch(`${TAPD_BASE}/comments`, {
+  const res = await proxyFetch(`${TAPD_BASE}/comments`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: form.toString(),

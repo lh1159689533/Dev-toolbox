@@ -1,0 +1,23 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: oklch(96% 0.01 160);
+  color: oklch(25% 0.02 160);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.options-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+}
+
+.options-header h1 {
+  margin: 0 0 20px;
+  font-size: 20px;
+}

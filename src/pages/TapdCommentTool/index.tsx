@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fetchCommits } from '../../api/git';
 import { fetchWorkspaces } from '../../api/tapd';
 import { getToolById } from '../../data/tools';
+import { STORAGE_KEYS, storageGet, storageSet } from '../../shared/storage';
 import type { CommitQuery, CommitRecord, TapdRef, TapdWorkspace } from '../../types';
 import CommentDialog from './CommentDialog';
 import CommitList from './CommitList';
@@ -10,6 +11,7 @@ import BranchSelect from './BranchSelect';
 import WorkspaceSelect from './WorkspaceSelect';
 import PageHeader from '../../components/PageHeader';
 import Button from '../../components/Button';
+import Input from '../../components/Input';
 import ErrorTip from '../../components/ErrorTip';
 import './index.css';
 
@@ -22,16 +24,15 @@ function today(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/** 从 .env.local 读取默认值（VITE_ 前缀变量） */
+/** 默认查询条件（空值；默认项由设置页保存到 chrome.storage 后在启动时回填） */
 function defaultQuery(): CommitQuery {
-  const env = import.meta.env;
   return {
-    projectPath: env.VITE_PROJECT_PATH ?? '',
-    branch: env.VITE_BRANCH || '', // 空 = 仓库默认分支
-    author: env.VITE_AUTHOR ?? '',
+    projectPath: '',
+    branch: '', // 空 = 仓库默认分支
+    author: '',
     since: today(),
     until: today(),
-    workspaceId: env.VITE_WORKSPACE_ID ?? '',
+    workspaceId: '',
   };
 }
 
@@ -218,22 +219,43 @@ export default function TapdCommentTool() {
     };
   }, []);
 
-  // 页面启动时从 localStorage 恢复上次输入
+  // 页面启动时：先从 chrome.storage 恢复上次输入，再用设置页默认查询条件（非空字段）覆盖
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('dev-toolbox:query');
-      if (saved) setQuery((q) => ({ ...q, ...JSON.parse(saved) }));
-    } catch {
-      /* ignore */
-    }
+    void (async () => {
+      try {
+        const saved = await storageGet<CommitQuery>(STORAGE_KEYS.tapdQuery);
+        if (saved) setQuery((q) => ({ ...q, ...saved }));
+      } catch {
+        /* ignore */
+      }
+      try {
+        const dq = await storageGet<Partial<CommitQuery>>(STORAGE_KEYS.defaultQuery);
+        if (dq) {
+          // 仅用设置页中已配置（非空）的字段覆盖，未配置字段保留上次输入
+          setQuery((q) => ({
+            ...q,
+            ...(dq.projectPath ? { projectPath: dq.projectPath } : {}),
+            ...(dq.branch ? { branch: dq.branch } : {}),
+            ...(dq.author ? { author: dq.author } : {}),
+            ...(dq.workspaceId ? { workspaceId: dq.workspaceId } : {}),
+          }));
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
   }, []);
 
+  // 保存上次输入（跳过首次挂载，避免把初始空值写入覆盖历史）
+  const skipSaveRef = useRef(true);
   useEffect(() => {
-    try {
-      localStorage.setItem('dev-toolbox:query', JSON.stringify(query));
-    } catch {
-      /* ignore */
+    if (skipSaveRef.current) {
+      skipSaveRef.current = false;
+      return;
     }
+    void storageSet(STORAGE_KEYS.tapdQuery, query).catch(() => {
+      /* ignore */
+    });
   }, [query]);
 
   // 查询面板表单内容（上下/左右两个面板复用同一份，内容完全一致）
@@ -242,7 +264,7 @@ export default function TapdCommentTool() {
       <div className="filter-grid">
         <label>
           <span>工蜂仓库路径</span>
-          <input
+          <Input
             placeholder="如 WeDataOS/wedata3-monorepo（或完整 URL）"
             value={query.projectPath}
             onChange={(e) => setField('projectPath', e.target.value)}
@@ -254,15 +276,15 @@ export default function TapdCommentTool() {
         </label>
         <label>
           <span>用户（作者）</span>
-          <input placeholder="英文名或邮箱" value={query.author} onChange={(e) => setField('author', e.target.value)} />
+          <Input placeholder="英文名或邮箱" value={query.author} onChange={(e) => setField('author', e.target.value)} />
         </label>
         <label>
           <span>起始时间</span>
-          <input type="date" value={query.since} onChange={(e) => setField('since', e.target.value)} />
+          <Input type="date" value={query.since} onChange={(e) => setField('since', e.target.value)} />
         </label>
         <label>
           <span>结束时间</span>
-          <input type="date" value={query.until} onChange={(e) => setField('until', e.target.value)} />
+          <Input type="date" value={query.until} onChange={(e) => setField('until', e.target.value)} />
         </label>
         <label>
           <span>TAPD 项目</span>

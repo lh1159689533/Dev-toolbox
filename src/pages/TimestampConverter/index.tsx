@@ -2,11 +2,19 @@ import { useEffect, useRef, useState } from 'react';
 import { getToolById } from '../../data/tools';
 import PageHeader from '../../components/PageHeader';
 import Button from '../../components/Button';
+import Input from '../../components/Input';
+import Select from '../../components/Select';
+import Textarea from '../../components/Textarea';
 import './index.css';
 
 type Unit = 's' | 'ms';
 
 const UNIT_LABEL: Record<Unit, string> = { s: '秒 (s)', ms: '毫秒 (ms)' };
+
+const UNIT_OPTIONS = [
+  { value: 's', label: UNIT_LABEL.s },
+  { value: 'ms', label: UNIT_LABEL.ms },
+];
 
 const TZ_OPTIONS: { value: string; label: string }[] = [
   { value: 'UTC', label: 'UTC' },
@@ -321,7 +329,7 @@ export default function TimestampConverter() {
           <div className="ts-now-actions">
             <Button onClick={() => setNowUnit((u) => (u === 'ms' ? 's' : 'ms'))}>切换单位</Button>
             <CopyButton text={nowValue} size="default" />
-            <Button className="ts-btn-danger" onClick={() => setPaused((p) => !p)}>
+            <Button variant="danger" onClick={() => setPaused((p) => !p)}>
               {paused ? '继续' : '暂停'}
             </Button>
           </div>
@@ -351,8 +359,7 @@ export default function TimestampConverter() {
               <div className="ts-row">
                 <label className="ts-field ts-field-grow">
                   <span>时间戳</span>
-                  <input
-                    className="ts-input"
+                  <Input
                     placeholder="例如 1700000000"
                     value={tsInput}
                     onChange={(e) => setTsInput(e.target.value)}
@@ -360,20 +367,11 @@ export default function TimestampConverter() {
                 </label>
                 <label className="ts-field">
                   <span>单位</span>
-                  <select className="ts-input" value={tsUnit} onChange={(e) => setTsUnit(e.target.value as Unit)}>
-                    <option value="s">{UNIT_LABEL.s}</option>
-                    <option value="ms">{UNIT_LABEL.ms}</option>
-                  </select>
+                  <Select value={tsUnit} options={UNIT_OPTIONS} onChange={(v) => setTsUnit(v as Unit)} />
                 </label>
                 <label className="ts-field">
                   <span>时区</span>
-                  <select className="ts-input" value={tsTz} onChange={(e) => setTsTz(e.target.value)}>
-                    {TZ_OPTIONS.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={tsTz} options={TZ_OPTIONS} onChange={(v) => setTsTz(v)} />
                 </label>
                 <div className="ts-field ts-field-actions">
                   <Button onClick={handleNowClick}>填入当前</Button>
@@ -386,8 +384,8 @@ export default function TimestampConverter() {
               <div className="ts-row ts-result-row">
                 <label className="ts-field ts-field-grow">
                   <span>转换结果</span>
-                  <input
-                    className={`ts-input${tsResult && !tsResult.ok ? ' ts-input-error' : ''}`}
+                  <Input
+                    invalid={!!(tsResult && !tsResult.ok)}
                     readOnly
                     placeholder="点击「转换」生成结果"
                     value={tsResult ? tsResult.value : ''}
@@ -407,8 +405,7 @@ export default function TimestampConverter() {
               <div className="ts-row">
                 <label className="ts-field ts-field-grow">
                   <span>日期时间</span>
-                  <input
-                    className="ts-input"
+                  <Input
                     placeholder="例如 2026-10-12 11:07:43"
                     value={dateInput}
                     onChange={(e) => setDateInput(e.target.value)}
@@ -416,13 +413,7 @@ export default function TimestampConverter() {
                 </label>
                 <label className="ts-field">
                   <span>时区</span>
-                  <select className="ts-input" value={dateTz} onChange={(e) => setDateTz(e.target.value)}>
-                    {TZ_OPTIONS.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={dateTz} options={TZ_OPTIONS} onChange={(v) => setDateTz(v)} />
                 </label>
                 <div className="ts-field ts-field-actions">
                   <Button variant="primary" onClick={convertDateToTs}>
@@ -434,8 +425,8 @@ export default function TimestampConverter() {
               <div className="ts-row ts-result-row">
                 <label className="ts-field ts-field-grow">
                   <span>转换结果</span>
-                  <input
-                    className={`ts-input${dateErr ? ' ts-input-error' : ''}`}
+                  <Input
+                    invalid={!!dateErr}
                     readOnly
                     placeholder="点击「转换」生成结果"
                     value={dateErr ?? (dateEpoch !== null ? formatEpoch(dateEpoch, dateUnit) : '')}
@@ -443,10 +434,7 @@ export default function TimestampConverter() {
                 </label>
                 <label className="ts-field">
                   <span>单位</span>
-                  <select className="ts-input" value={dateUnit} onChange={(e) => setDateUnit(e.target.value as Unit)}>
-                    <option value="s">{UNIT_LABEL.s}</option>
-                    <option value="ms">{UNIT_LABEL.ms}</option>
-                  </select>
+                  <Select value={dateUnit} options={UNIT_OPTIONS} onChange={(v) => setDateUnit(v as Unit)} />
                 </label>
                 <div className="ts-field ts-field-actions">
                   <CopyButton text={dateEpoch !== null ? formatEpoch(dateEpoch, dateUnit) : ''} />
@@ -464,8 +452,7 @@ export default function TimestampConverter() {
               <div className="ts-row">
                 <label className="ts-field ts-field-grow">
                   <span>时间戳列表（每行一个）</span>
-                  <textarea
-                    className="ts-textarea"
+                  <Textarea
                     placeholder={'1700000000\n1710000000000\n1720000000'}
                     value={bTsInput}
                     onChange={(e) => setBTsInput(e.target.value)}
@@ -476,20 +463,11 @@ export default function TimestampConverter() {
               <div className="ts-row">
                 <label className="ts-field">
                   <span>时区</span>
-                  <select className="ts-input" value={bTsTz} onChange={(e) => setBTsTz(e.target.value)}>
-                    {TZ_OPTIONS.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={bTsTz} options={TZ_OPTIONS} onChange={(v) => setBTsTz(v)} />
                 </label>
                 <label className="ts-field">
                   <span>单位</span>
-                  <select className="ts-input" value={bTsUnit} onChange={(e) => setBTsUnit(e.target.value as Unit)}>
-                    <option value="s">{UNIT_LABEL.s}</option>
-                    <option value="ms">{UNIT_LABEL.ms}</option>
-                  </select>
+                  <Select value={bTsUnit} options={UNIT_OPTIONS} onChange={(v) => setBTsUnit(v as Unit)} />
                 </label>
                 <div className="ts-field ts-field-actions">
                   <Button variant="primary" onClick={convertBatchTs}>
@@ -526,8 +504,7 @@ export default function TimestampConverter() {
               <div className="ts-row">
                 <label className="ts-field ts-field-grow">
                   <span>日期时间列表（每行一个）</span>
-                  <textarea
-                    className="ts-textarea"
+                  <Textarea
                     placeholder={'2026-10-12 11:07:43\n2026-10-13 08:00:00'}
                     value={bDateInput}
                     onChange={(e) => setBDateInput(e.target.value)}
@@ -538,20 +515,11 @@ export default function TimestampConverter() {
               <div className="ts-row">
                 <label className="ts-field">
                   <span>时区</span>
-                  <select className="ts-input" value={bDateTz} onChange={(e) => setBDateTz(e.target.value)}>
-                    {TZ_OPTIONS.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
+                  <Select value={bDateTz} options={TZ_OPTIONS} onChange={(v) => setBDateTz(v)} />
                 </label>
                 <label className="ts-field">
                   <span>单位</span>
-                  <select className="ts-input" value={bDateUnit} onChange={(e) => setBDateUnit(e.target.value as Unit)}>
-                    <option value="s">{UNIT_LABEL.s}</option>
-                    <option value="ms">{UNIT_LABEL.ms}</option>
-                  </select>
+                  <Select value={bDateUnit} options={UNIT_OPTIONS} onChange={(v) => setBDateUnit(v as Unit)} />
                 </label>
                 <div className="ts-field ts-field-actions">
                   <Button variant="primary" onClick={convertBatchDate}>

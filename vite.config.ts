@@ -1,35 +1,22 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { crx } from '@crxjs/vite-plugin';
+import { resolve } from 'node:path';
+import manifest from './public/manifest.json';
 
-export default defineConfig(({ mode }) => {
-  // 显式加载 .env.local 中的变量（不限 VITE_ 前缀）
-  const env = loadEnv(mode, process.cwd(), '');
-
-  const GIT_TOKEN = env.GIT_TOKEN || '';
-  const TAPD_AUTH = env.TAPD_AUTH || ''; // 个人访问令牌（Access Token）
-
-  return {
-    plugins: [react()],
-    server: {
-      port: 5173,
-      proxy: {
-        // 工蜂 OpenAPI 代理（工蜂使用 /api/v3，认证头 PRIVATE-TOKEN）
-        '/git-api': {
-          target: 'https://git.woa.com',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/git-api/, '/api/v3'),
-          headers: GIT_TOKEN ? { 'PRIVATE-TOKEN': GIT_TOKEN } : {},
-        },
-        // TAPD OpenAPI 代理（个人访问令牌用 Bearer 认证）
-        '/tapd-api': {
-          target: 'http://apiv2.tapd.woa.com',
-          changeOrigin: true,
-          rewrite: (path) => path.replace(/^\/tapd-api/, ''),
-          headers: TAPD_AUTH
-            ? { Authorization: `Bearer ${TAPD_AUTH}` }
-            : {},
-        },
+export default defineConfig({
+  plugins: [react(), crx({ manifest })],
+  build: {
+    rollupOptions: {
+      input: {
+        // 主页面（新标签页打开的完整工具集），CRXJS 不会自动把它作为入口
+        index: resolve(process.cwd(), 'index.html'),
+        // DevTools「操作录制」面板页，由 devtools_page 通过 panels.create 动态加载
+        devtoolsPanel: resolve(process.cwd(), 'src/devtools/panel.html'),
       },
     },
-  };
+  },
+  server: {
+    port: 5173,
+  },
 });

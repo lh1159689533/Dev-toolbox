@@ -1,0 +1,170 @@
+.td-select-root {
+  position: relative;
+}
+
+/* 触发器：input（可搜索）与 button（普通）共用同一套外观 */
+.td-select {
+  width: 100%;
+  height: var(--td-control-h);
+  padding: 0 30px 0 10px;
+  border: 1px solid var(--td-border);
+  border-radius: var(--td-radius);
+  outline: none;
+  font-family: inherit;
+  font-size: var(--td-font-size);
+  color: var(--td-text);
+  background-color: var(--td-bg);
+  /* 箭头常驻（展开/收起都显示） */
+  background-image: var(--td-select-arrow);
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+button.td-select {
+  display: flex;
+  align-items: center;
+}
+
+.td-select:focus {
+  border-color: var(--td-primary);
+  box-shadow: var(--td-focus-ring);
+}
+
+.td-select:hover:not(:disabled) {
+  border-color: var(--td-primary);
+}
+
+.td-select:disabled {
+  color: var(--td-text-muted);
+  background-color: var(--td-bg-muted);
+  cursor: not-allowed;
+}
+
+/* 可搜索态展开后进入文本编辑 */
+input.td-select.open {
+  cursor: text;
+}
+
+/* 展开时箭头朝上 */
+.td-select.open {
+  background-image: var(--td-select-arrow-up);
+}
+
+.td-select-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.td-select-label.placeholder {
+  color: var(--td-text-muted);
+}
+
+.td-select.small {
+  height: var(--td-control-h-sm);
+  padding: 0 24px 0 8px;
+  font-size: 12px;
+  background-position: right 8px center;
+}
+
+/* ===== 选项面板 ===== */
+.td-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--td-bg);
+  border: 1px solid var(--td-border);
+  border-radius: var(--td-radius);
+  box-shadow: 0 8px 24px oklch(20% 0.02 160 / 15%);
+  /* 细圆角滚动条（Firefox） */
+  scrollbar-width: thin;
+  scrollbar-color: oklch(80% 0.01 160 / 70%) transparent;
+}
+
+/* 进出场动画：in=淡入，out=淡出（动画结束后由 onAnimationEnd 卸载） */
+.td-select-dropdown.in {
+  animation: td-select-in 0.16s cubic-bezier(0.2, 0.8, 0.4, 1) both;
+}
+
+.td-select-dropdown.out {
+  animation: td-select-out 0.12s ease both;
+  pointer-events: none;
+}
+
+@keyframes td-select-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes td-select-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.td-select-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.td-select-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.td-select-dropdown::-webkit-scrollbar-thumb {
+  background: oklch(80% 0.01 160 / 70%);
+  border-radius: 3px;
+}
+
+.td-select-dropdown::-webkit-scrollbar-thumb:hover {
+  background: oklch(68% 0.01 160 / 90%);
+}
+
+.td-select-option {
+  padding: 8px 12px;
+  font-size: var(--td-font-size-sm);
+  color: var(--td-text);
+  cursor: pointer;
+  word-break: break-all;
+}
+
+.td-select-option.active {
+  background: oklch(94% 0.015 160);
+}
+
+.td-select-option.selected {
+  background: var(--td-primary-soft);
+  color: oklch(48% 0.07 160);
+  font-weight: 500;
+}
+
+.td-select-option.hint {
+  color: var(--td-text-muted);
+  font-size: var(--td-font-size-md);
+}
+
+.td-select-option.empty {
+  color: var(--td-text-muted);
+  text-align: center;
+  cursor: default;
+}

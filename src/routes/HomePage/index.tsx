@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ToolMeta } from '../../types';
 import tools from '../../data/tools.json';
-import { saveToolsMeta } from '../../data/tools';
+import Input from '../../components/Input';
 import './index.css';
 
 const allTools = tools as ToolMeta[];
@@ -25,9 +25,6 @@ export default function HomePage() {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState('全部');
-
-  // 将工具元信息写入 localStorage，供各工具页面统一读取标题/描述
-  saveToolsMeta(allTools);
 
   // 仅展示 enabled 的工具
   const enabledTools = useMemo(() => allTools.filter((t) => t.enabled), []);
@@ -69,7 +66,7 @@ export default function HomePage() {
       <div className="home-body">
         <aside className="home-sidebar">
           <div className="home-search">
-            <input type="text" placeholder="搜索工具…" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
+            <Input type="text" placeholder="搜索工具…" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
           </div>
           <nav className="home-categories">
             <button

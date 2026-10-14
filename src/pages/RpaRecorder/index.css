@@ -1,0 +1,261 @@
+.rpa-app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rpa-toolbar {
+  display: flex;
+  gap: 8px;
+  padding: 16px 24px 0;
+}
+
+.rpa-msg {
+  margin: 8px 24px 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: oklch(96% 0.02 160);
+  color: oklch(45% 0.05 160);
+  font-size: 13px;
+}
+
+.rpa-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: oklch(60% 0.02 160);
+  font-size: 14px;
+  padding: 24px;
+  text-align: center;
+}
+
+.rpa-list {
+  flex: 1;
+  overflow: auto;
+  margin: 0;
+  padding: 16px 24px 24px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rpa-item {
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px;
+  background: #fff;
+  border: 1px solid oklch(90% 0.02 160);
+  border-radius: 8px;
+}
+
+.rpa-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rpa-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rpa-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: oklch(30% 0.02 160);
+}
+
+.rpa-meta {
+  font-size: 12px;
+  color: oklch(55% 0.02 160);
+}
+
+.rpa-item-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ===== 步骤列表 ===== */
+.rpa-steps {
+  margin-top: 12px;
+  border-top: 1px solid oklch(94% 0.01 160);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rpa-steps-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rpa-steps-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: oklch(40% 0.02 160);
+}
+
+.rpa-steps-empty {
+  padding: 16px;
+  text-align: center;
+  color: oklch(60% 0.02 160);
+  font-size: 13px;
+}
+
+.rpa-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: oklch(97% 0.01 160);
+  border-radius: 6px;
+}
+
+.rpa-step-index {
+  width: 22px;
+  text-align: center;
+  font-size: 12px;
+  color: oklch(55% 0.02 160);
+  flex-shrink: 0;
+}
+
+.rpa-step-type {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: oklch(94% 0.015 160);
+  color: oklch(45% 0.02 160);
+  flex-shrink: 0;
+}
+
+.rpa-step-type.type-navigate {
+  background: oklch(92% 0.04 120);
+  color: oklch(42% 0.09 120);
+}
+
+.rpa-step-type.type-wait {
+  background: oklch(92% 0.02 60);
+  color: oklch(45% 0.06 60);
+}
+
+.rpa-step-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.rpa-step-btn {
+  border: 1px solid oklch(88% 0.01 160);
+  background: #fff;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  color: oklch(40% 0.02 160);
+}
+
+.rpa-step-btn:hover:not(:disabled) {
+  background: oklch(96% 0.01 160);
+}
+
+.rpa-step-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.rpa-step-btn.danger {
+  color: oklch(55% 0.15 25);
+}
+
+.rpa-cmd-select {
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.rpa-cmd-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.rpa-delay-input {
+  width: 76px;
+  flex-shrink: 0;
+}
+
+/* ===== 只读事件展示 ===== */
+.rpa-step-field {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: oklch(40% 0.02 160);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rpa-step-placeholder {
+  color: oklch(75% 0.01 160);
+  font-style: normal;
+}
+
+.rpa-step-editing {
+  background: oklch(99% 0.005 160);
+}
+
+/* ===== 视图切换 ===== */
+.rpa-steps-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rpa-view-toggle {
+  display: inline-flex;
+  border: 1px solid oklch(88% 0.01 160);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rpa-view-btn {
+  border: none;
+  background: #fff;
+  padding: 3px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  color: oklch(45% 0.02 160);
+}
+
+.rpa-view-btn + .rpa-view-btn {
+  border-left: 1px solid oklch(88% 0.01 160);
+}
+
+.rpa-view-btn.active {
+  background: var(--td-primary);
+  color: #fff;
+}
+
+/* ===== JSON 编辑器 ===== */
+.rpa-json-editor-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rpa-json-editor {
+  min-height: 200px;
+}
+
+.rpa-json-error {
+  font-size: 12px;
+  color: oklch(55% 0.15 25);
+}

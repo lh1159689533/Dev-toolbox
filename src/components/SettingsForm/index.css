@@ -1,0 +1,57 @@
+.settings-form {
+  color: var(--td-text);
+  font-size: var(--td-font-size);
+  line-height: 1.6;
+}
+
+.settings-form .form-section {
+  background: var(--td-bg);
+  border: 1px solid var(--td-border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.settings-form .form-section h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.settings-form .hint {
+  margin: 0 0 16px;
+  color: var(--td-text-muted);
+  font-size: 12px;
+}
+
+.settings-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.settings-form .field:last-child {
+  margin-bottom: 0;
+}
+
+.settings-form .field span {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.settings-form .form-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-form .saved-tip {
+  color: var(--td-primary);
+  font-size: 13px;
+}
+
+.settings-form .settings-form-loading {
+  color: var(--td-text-muted);
+  padding: 20px 0;
+  text-align: center;
+}

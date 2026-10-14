@@ -1,0 +1,36 @@
+.td-input {
+  height: var(--td-control-h);
+  padding: 0 10px;
+  border: 1px solid var(--td-border);
+  border-radius: var(--td-radius);
+  outline: none;
+  font-size: var(--td-font-size);
+  color: var(--td-text);
+  background: var(--td-bg);
+}
+
+.td-input:focus {
+  border-color: var(--td-primary);
+  box-shadow: var(--td-focus-ring);
+}
+
+.td-input:hover:not(:disabled) {
+  border-color: var(--td-primary);
+}
+
+.td-input[readonly] {
+  font-family: 'SF Mono', Menlo, Consolas, monospace;
+  background: var(--td-bg-muted);
+  color: var(--td-text-secondary);
+}
+
+.td-input.invalid {
+  border-color: var(--td-danger);
+  color: var(--td-danger);
+}
+
+.td-input.small {
+  height: var(--td-control-h-sm);
+  padding: 0 8px;
+  font-size: 12px;
+}

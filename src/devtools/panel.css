@@ -1,0 +1,582 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  font-size: 13px;
+  color: oklch(30% 0.02 160);
+  background: #fff;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+input,
+select {
+  font-family: inherit;
+}
+
+.dt-app {
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ===== 左侧：脚本列表 ===== */
+.dt-left {
+  width: 266px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: oklch(98% 0.01 160);
+  border-right: 1px solid oklch(90% 0.02 160);
+}
+
+.dt-left-head {
+  padding: 12px 14px;
+  border-bottom: 1px solid oklch(90% 0.02 160);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dt-left-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dt-left-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.dt-script-list {
+  flex: 1;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dt-script-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid oklch(94% 0.01 160);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dt-script-item:hover {
+  background: oklch(96% 0.01 160);
+}
+
+.dt-script-item.selected {
+  background: oklch(92% 0.04 160);
+}
+
+.dt-script-name-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dt-script-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dt-script-item-actions {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.dt-script-item-actions > span {
+  font-size: 10px;
+  color: var(--td-primary);
+}
+
+.dt-script-item-actions > span.danger {
+  color: oklch(55% 0.15 25);
+}
+
+.dt-script-item:hover .dt-script-item-actions {
+  display: flex;
+}
+
+.dt-script-meta {
+  font-size: 12px;
+  color: oklch(55% 0.02 160);
+}
+
+/* ===== 右侧：脚本详情 ===== */
+.dt-right {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: oklch(98% 0.01 160);
+}
+
+.dt-msg {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 360px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+}
+
+.dt-msg-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dt-msg--success {
+  background: oklch(96% 0.05 150);
+  color: oklch(42% 0.09 150);
+}
+
+.dt-msg--error {
+  background: oklch(96% 0.03 25);
+  color: oklch(45% 0.13 25);
+}
+
+.dt-msg--info {
+  background: oklch(96% 0.02 160);
+  color: oklch(45% 0.05 160);
+}
+
+.dt-msg--picking {
+  background: oklch(96% 0.02 160);
+  color: oklch(45% 0.05 160);
+}
+
+.dt-msg-close {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0 2px;
+  font-size: 14px;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.6;
+}
+
+.dt-msg-close:hover {
+  opacity: 1;
+}
+
+.dt-rename-input {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+}
+
+.dt-cmd-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 16px;
+  border-bottom: 1px solid oklch(90% 0.02 160);
+}
+
+.dt-cmd-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.dt-cmd-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dt-speed-label {
+  font-size: 12px;
+  color: oklch(45% 0.02 160);
+}
+
+.dt-speed-word {
+  font-size: 11px;
+  color: oklch(55% 0.02 160);
+}
+
+.dt-speed-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 120px;
+  height: 14px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.dt-speed-range:focus {
+  outline: none;
+}
+
+.dt-speed-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--td-primary) 0%,
+    var(--td-primary) var(--speed-fill, 44%),
+    oklch(90% 0.01 160) var(--speed-fill, 44%),
+    oklch(90% 0.01 160) 100%
+  );
+}
+
+.dt-speed-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  margin-top: -4px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--td-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.1s ease;
+}
+
+.dt-speed-range:hover::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+
+.dt-speed-range:active::-webkit-slider-thumb {
+  transform: scale(1.25);
+}
+
+.dt-speed-range::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: oklch(90% 0.01 160);
+}
+
+.dt-speed-range::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--td-primary);
+}
+
+.dt-speed-range::-moz-range-thumb {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--td-primary);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.dt-speed-value {
+  min-width: 16px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: oklch(40% 0.02 160);
+}
+
+.dt-cmd-list {
+  flex: 1;
+  overflow: auto;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dt-cmd-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dt-cmd-row:hover {
+  background: oklch(97% 0.01 160);
+}
+
+.dt-cmd-row.selected {
+  background: oklch(92% 0.04 160);
+  outline: 1px solid var(--td-primary);
+}
+
+.dt-cmd-row.executing {
+  background: oklch(95% 0.05 150);
+  outline: 1px solid oklch(70% 0.1 150);
+}
+
+.dt-cmd-row.failed {
+  background: oklch(96% 0.03 25);
+  outline: 1px solid oklch(70% 0.15 25);
+}
+
+.dt-cmd-row.failed:hover {
+  background: oklch(95% 0.04 25);
+}
+
+.dt-cmd-error {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: oklch(45% 0.16 25);
+  font-weight: 500;
+}
+
+.dt-cmd-index {
+  width: 22px;
+  text-align: center;
+  font-size: 12px;
+  color: oklch(55% 0.02 160);
+  flex-shrink: 0;
+}
+
+.dt-cmd-select {
+  width: 160px;
+  flex-shrink: 0;
+}
+
+.dt-cmd-input {
+  flex: 2;
+  min-width: 0;
+}
+
+.dt-cmd-value {
+  flex: 1;
+}
+
+.dt-cmd-delay-wrap {
+  position: relative;
+  flex: 0 0 100px;
+  min-width: 0;
+  display: flex;
+}
+
+/* 提高优先级：覆盖 .td-input.small 的 padding，给右侧步进按钮留空间 */
+.dt-cmd-delay-wrap .dt-cmd-delay {
+  width: 100%;
+  padding-right: 22px;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+/* 隐藏 number 输入框原生加减按钮（spinner），改用自定义步进按钮 */
+.dt-cmd-delay::-webkit-outer-spin-button,
+.dt-cmd-delay::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.dt-delay-stepper {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  flex-direction: column;
+}
+
+.dt-cmd-delay-wrap:hover .dt-delay-stepper {
+  display: flex;
+}
+
+.dt-delay-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 10px;
+  line-height: 9px;
+  color: var(--td-text-muted);
+  cursor: pointer;
+  width: 28px;
+  height: 13px;
+}
+
+.dt-delay-btn.increase {
+  border-top-right-radius: 4px;
+}
+
+.dt-delay-btn.decrease {
+  border-bottom-right-radius: 4px;
+}
+
+.dt-delay-btn.disabled:hover {
+  cursor: not-allowed;
+  background: oklch(92% 0.04 160);
+  color: oklch(70% 0.03 160);
+}
+
+.dt-delay-btn:not(.disabled):hover {
+  color: #fff;
+  background-color: var(--td-primary);
+}
+
+.dt-cmd-input:hover,
+.dt-cmd-select:hover {
+  border-color: var(--td-primary);
+}
+
+.dt-cmd-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ===== 按钮 ===== */
+.dt-btn {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 12px;
+  border: 1px solid oklch(88% 0.02 160);
+  border-radius: 4px;
+  background: #fff;
+  color: oklch(30% 0.02 160);
+  white-space: nowrap;
+}
+
+.dt-btn:hover:not(:disabled) {
+  border-color: oklch(50% 0.07 160);
+  color: oklch(50% 0.07 160);
+}
+
+.dt-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* .dt-btn.active {
+  border-color: oklch(55% 0.14 230);
+  background: oklch(55% 0.14 230);
+  color: #fff;
+} */
+
+.dt-btn.danger {
+  color: oklch(55% 0.15 25);
+}
+
+.dt-btn.danger:hover:not(:disabled) {
+  border-color: oklch(55% 0.15 25);
+  color: oklch(55% 0.15 25);
+}
+
+.dt-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  border: 1px solid oklch(88% 0.02 160);
+  background: #fff;
+  border-radius: 4px;
+  color: oklch(40% 0.02 160);
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.dt-icon-btn.icon {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+}
+
+.dt-icon-btn svg {
+  display: block;
+}
+
+.dt-icon-btn:hover:not(:disabled) {
+  background: oklch(96% 0.01 160);
+  border-color: oklch(50% 0.07 160);
+  color: oklch(50% 0.07 160);
+}
+
+.dt-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dt-icon-btn.danger {
+  color: oklch(55% 0.15 25);
+}
+
+.dt-icon-btn.danger:hover:not(:disabled) {
+  border-color: oklch(55% 0.15 25);
+  color: oklch(55% 0.15 25);
+}
+
+/* ===== 左侧脚本区图标操作按钮 ===== */
+.dt-icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 6px;
+  background: oklch(50% 0.07 160);
+  color: #fff;
+  flex-shrink: 0;
+  border: none;
+}
+
+/* .dt-icon-action:hover:not(:disabled) {
+  border-color: oklch(50% 0.07 160);
+  color: oklch(50% 0.07 160);
+} */
+
+.dt-icon-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* .dt-icon-action.danger {
+  color: oklch(55% 0.15 25);
+}
+
+.dt-icon-action.danger:hover:not(:disabled) {
+  border-color: oklch(55% 0.15 25);
+  color: oklch(55% 0.15 25);
+} */
+
+.dt-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: oklch(60% 0.02 160);
+  font-size: 13px;
+  padding: 24px;
+  text-align: center;
+}

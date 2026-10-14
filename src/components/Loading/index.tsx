@@ -22,7 +22,7 @@ export const LoadingDots = () => {
   return <span>{'.'.repeat(dotCount)}</span>;
 };
 
-export const Loading = ({ className, style, content = '加载中' }: LoadingProps) => {
+export const Loading = ({ className = '', style, content = '加载中' }: LoadingProps) => {
   return (
     <div className={`loading ${className}`} style={style}>
       <svg

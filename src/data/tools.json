@@ -72,5 +72,21 @@
     "icon": "./public/icons/dupkey.svg",
     "path": "/tools/json-dup-key",
     "enabled": true
+  },
+  {
+    "id": "rpa-recorder",
+    "name": "操作录制",
+    "description": "录制浏览器操作并一键回放，自动完成重复自测流程",
+    "category": "开发协作",
+    "keywords": [
+      "rpa",
+      "录制",
+      "回放",
+      "自动化",
+      "自测"
+    ],
+    "icon": "./public/icons/record.svg",
+    "path": "/tools/rpa-recorder",
+    "enabled": true
   }
 ]
