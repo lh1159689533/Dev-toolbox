@@ -146,6 +146,21 @@ function DecreaseIcon() {
   );
 }
 
+function ResumePlayIcon() {
+  return (
+    <svg viewBox="0 0 1042 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="55355" width="14" height="14">
+      <path
+        d="M506.514286 91.428571c-102.4-1.828571-197.485714 31.085714-274.285715 93.257143l21.942858-73.142857L184.685714 91.428571l-45.714285 151.771429c-5.485714 20.114286 5.485714 40.228571 23.771428 45.714286l151.771429 45.714285 20.114285-69.485714-62.171428-18.285714c60.342857-47.542857 131.657143-76.8 210.285714-80.457143 197.485714-9.142857 371.2 144.457143 384 341.942857 12.8 212.114286-155.428571 389.485714-365.714286 389.485714-201.142857 0-365.714286-164.571429-365.714285-365.714285h-73.142857c0 241.371429 197.485714 438.857143 438.857142 438.857143 246.857143 0 446.171429-202.971429 438.857143-451.657143C934.4 285.257143 740.571429 93.257143 506.514286 91.428571z"
+        p-id="55356"
+      ></path>
+      <path
+        d="M444.342857 782.628571c9.142857 0 18.285714-3.657143 25.6-10.971428l219.428572-219.428572c14.628571-14.628571 14.628571-36.571429 0-51.2l-219.428572-219.428571c-10.971429-10.971429-25.6-12.8-40.228571-7.314286-12.8 5.485714-21.942857 18.285714-21.942857 32.914286v438.857143c0 14.628571 9.142857 27.428571 21.942857 32.914286 5.485714 3.657143 10.971429 3.657143 14.628571 3.657142z m36.571429-387.657142l131.657143 131.657142-131.657143 131.657143V394.971429z"
+        p-id="55357"
+      ></path>
+    </svg>
+  );
+}
+
 function DevtoolsPanel() {
   const [scripts, setScripts] = useState<RpaMacro[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -155,6 +170,8 @@ function DevtoolsPanel() {
   const [msg, setMsg] = useState<MsgState>(null);
   const [playbackState, setPlaybackState] = useState<RpaRunState>({ ...DEFAULT_RPA_RUN_STATE });
   const [recordingStatus, setRecordingStatus] = useState<RpaRecordingStatus>(RpaRecordingStatus.Idle);
+  // 诊断视图开关：回放失败后点击错误行「诊断」按钮切换到诊断视图
+  const [showDiagnosis, setShowDiagnosis] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
   const scriptsRef = useRef<RpaMacro[]>([]);
@@ -469,15 +486,21 @@ function DevtoolsPanel() {
   };
 
   // ===== 回放 =====
-  const handlePlay = () => {
+  const handlePlay = (startIndex?: number) => {
     if (!selected) return;
     ensurePort();
     void chrome.runtime.sendMessage({
       type: RpaMessageType.START_PLAYBACK,
-      payload: { macroId: selected.id, tabId: chrome.devtools.inspectedWindow.tabId },
+      payload: { macroId: selected.id, tabId: chrome.devtools.inspectedWindow.tabId, startIndex },
     });
-    showPageToast('已开始回放', 'success');
+    showPageToast(startIndex != null ? `已从第 ${startIndex + 1} 步开始回放` : '已开始回放', 'success');
   };
+
+  // 失败诊断：回放失败时的最后一条结果（含截图、URL、重试次数）
+  const failedResult =
+    playbackState.status === RpaRunStatus.Error
+      ? (playbackState.results[playbackState.results.length - 1] ?? null)
+      : null;
 
   const handlePause = () => {
     void chrome.runtime.sendMessage({ type: RpaMessageType.PAUSE_PLAYBACK });
@@ -506,7 +529,6 @@ function DevtoolsPanel() {
       playbackState.status === RpaRunStatus.Error &&
       selected!.id === playbackState.macroId &&
       playbackState.currentCommandIndex === i;
-    const failedError = isFailed ? playbackState.error : undefined;
     return (
       <div
         key={cmd.id ?? i}
@@ -568,12 +590,17 @@ function DevtoolsPanel() {
             </button>
           </span>
         </div>
-        {failedError && (
-          <span className="dt-cmd-error" title={failedError}>
-            {failedError}
-          </span>
-        )}
         <span className="dt-cmd-actions" onClick={(e) => e.stopPropagation()}>
+          {isFailed && (
+            <>
+              <button type="button" className="dt-icon-btn danger" onClick={() => setShowDiagnosis(true)}>
+                详情
+              </button>
+              <button type="button" className="dt-icon-btn icon" onClick={() => handlePlay(i)} title="继续回放">
+                <ResumePlayIcon />
+              </button>
+            </>
+          )}
           <button
             type="button"
             className="dt-icon-btn icon"
@@ -723,6 +750,26 @@ function DevtoolsPanel() {
 
         {!selected ? (
           <div className="dt-empty">请选择一个脚本</div>
+        ) : showDiagnosis && failedResult ? (
+          <div className="dt-failure-view">
+            <div className="dt-failure-head">
+              <span className="dt-failure-title">回放失败诊断</span>
+              <button type="button" className="dt-btn" onClick={() => setShowDiagnosis(false)}>
+                返回事件列表
+              </button>
+            </div>
+            <div className="dt-failure-body">
+              <div className="dt-failure-step">
+                第 {playbackState.currentCommandIndex + 1} 步 · {failedResult.command.command}
+                {failedResult.retries ? ` · 已自动重试 ${failedResult.retries} 次` : ''}
+              </div>
+              <div className="dt-failure-error">{failedResult.error || playbackState.error}</div>
+              {failedResult.pageUrl && <div className="dt-failure-url">{failedResult.pageUrl}</div>}
+              {failedResult.screenshot && (
+                <img className="dt-failure-screenshot" src={failedResult.screenshot} alt="失败页面截图" />
+              )}
+            </div>
+          </div>
         ) : (
           <>
             <div className="dt-cmd-toolbar">
@@ -757,7 +804,7 @@ function DevtoolsPanel() {
                   </button>
                 )}
                 {playbackState.status !== RpaRunStatus.Running && playbackState.status !== RpaRunStatus.Paused && (
-                  <button type="button" className="dt-icon-btn" onClick={handlePlay}>
+                  <button type="button" className="dt-icon-btn" onClick={() => handlePlay()}>
                     回放
                   </button>
                 )}

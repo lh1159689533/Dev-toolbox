@@ -78,6 +78,8 @@ export class RpaCommandExecutor {
         // 执行脚本
         case 'executeScript':
           return this.doExecuteScript(target);
+        case 'executeAsyncScript':
+          return await this.doExecuteAsyncScript(target);
 
         default:
           return { success: false, error: `Unknown command: ${command}` };
@@ -98,7 +100,19 @@ export class RpaCommandExecutor {
       node = node.parentElement;
     }
 
-    el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    // 完整模拟真实点击的鼠标事件序列（mousedown → mouseup → click）：
+    // 组件库（如 TDesign）基于 mousedown 实现"点击外部关闭下拉面板"，只派发 click 会导致面板无法关闭
+    const rect = el.getBoundingClientRect();
+    const mouseOpts: MouseEventInit = {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+      clientX: rect.left + rect.width / 2,
+      clientY: rect.top + rect.height / 2,
+    };
+    el.dispatchEvent(new MouseEvent('mousedown', mouseOpts));
+    el.dispatchEvent(new MouseEvent('mouseup', mouseOpts));
+    el.dispatchEvent(new MouseEvent('click', mouseOpts));
     return { success: true };
   }
 
@@ -170,6 +184,22 @@ export class RpaCommandExecutor {
       '${KEY_LEFT}': 'ArrowLeft',
       '${KEY_RIGHT}': 'ArrowRight',
     };
+
+    // 组合键语法：MOD1+MOD2+KEY，例如 CTRL+K、META+SHIFT+F（快捷键录制时生成）
+    const parts = value.includes('+') && !value.startsWith('${') ? value.split('+').map((p) => p.trim()) : null;
+    if (parts && parts.length > 1) {
+      const key = keyMap[parts[parts.length - 1]] || parts[parts.length - 1];
+      const upper = parts.map((p) => p.toUpperCase());
+      const modifier = {
+        metaKey: upper.includes('META') || upper.includes('CMD') || upper.includes('COMMAND'),
+        ctrlKey: upper.includes('CTRL') || upper.includes('CONTROL'),
+        altKey: upper.includes('ALT') || upper.includes('OPTION'),
+        shiftKey: upper.includes('SHIFT'),
+      };
+      el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...modifier }));
+      el.dispatchEvent(new KeyboardEvent('keyup', { key, bubbles: true, cancelable: true, ...modifier }));
+      return { success: true };
+    }
 
     const key = keyMap[value] || value;
     el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
@@ -282,19 +312,8 @@ export class RpaCommandExecutor {
 
     while (Date.now() < deadline) {
       const el = RpaLocatorEngine.findUniqueElement(target) as HTMLElement;
-      if (el) {
-        const style = window.getComputedStyle(el);
-        // 同 waitAndFind：用 getBoundingClientRect 兼容 SVG 元素
-        const rect = el.getBoundingClientRect();
-        if (
-          style.display !== 'none' &&
-          style.visibility !== 'hidden' &&
-          style.opacity !== '0' &&
-          rect.width > 0 &&
-          rect.height > 0
-        ) {
-          return { success: true };
-        }
+      if (el && this.isVisibleForInteraction(el)) {
+        return { success: true };
       }
       await new Promise((r) => setTimeout(r, 200));
     }
@@ -360,12 +379,36 @@ export class RpaCommandExecutor {
 
   // ------ 脚本 ------
 
-  private doExecuteScript(_script: string): CommandResult {
-    // 注意：CSP 限制，不能用 eval；与参考项目保持一致，返回不支持提示
-    return {
-      success: false,
-      error: 'executeScript requires page context injection (not yet implemented)',
-    };
+  private doExecuteScript(script: string): CommandResult {
+    try {
+      // content script 运行在 isolated world，`new Function` 不受页面 CSP 约束；
+      // 与页面共享 DOM，可操作元素、读取数据、触发事件，但无法访问页面的 window 全局变量。
+      const result = new Function(script)();
+      return { success: true, storedValue: this.serializeValue(result) };
+    } catch (err) {
+      return { success: false, error: `executeScript 执行失败: ${(err as Error).message}` };
+    }
+  }
+
+  private async doExecuteAsyncScript(script: string): Promise<CommandResult> {
+    try {
+      // 将脚本包在 async IIFE 中执行，支持 await / 返回 Promise
+      const result = await new Function(`return (async () => { ${script} })()`)();
+      return { success: true, storedValue: this.serializeValue(result) };
+    } catch (err) {
+      return { success: false, error: `executeAsyncScript 执行失败: ${(err as Error).message}` };
+    }
+  }
+
+  /** 将执行结果序列化为字符串（供 store 变量使用） */
+  private serializeValue(value: unknown): string {
+    if (value === undefined || value === null) return '';
+    if (typeof value === 'string') return value;
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
   }
 
   // ------ 工具方法 ------
@@ -373,28 +416,68 @@ export class RpaCommandExecutor {
   private async waitAndFind(target: string, waitForVisible = true): Promise<Element> {
     const deadline = Date.now() + this.timeout;
 
+    let el: Element | null = null;
     while (Date.now() < deadline) {
-      const el = RpaLocatorEngine.findUniqueElement(target) as HTMLElement | null;
+      el = RpaLocatorEngine.findUniqueElement(target) as HTMLElement | null;
       if (el) {
         if (!waitForVisible) return el;
 
-        const style = window.getComputedStyle(el);
-        // 用 getBoundingClientRect 判断尺寸：SVG 元素没有 offsetWidth/offsetHeight（undefined），
-        // 会导致可见元素被误判为不可见、轮询到超时报 "Element not found"
-        const rect = el.getBoundingClientRect();
-        const isVisible =
-          style.display !== 'none' &&
-          style.visibility !== 'hidden' &&
-          style.opacity !== '0' &&
-          rect.width > 0 &&
-          rect.height > 0;
-
-        if (isVisible) return el;
+        if (this.isVisibleForInteraction(el)) {
+          return el;
+        }
       }
       await new Promise((r) => setTimeout(r, 200));
     }
 
-    throw new Error(`Element not found within ${this.timeout}ms: ${target}`);
+    throw new Error(`未找到目标元素（超时 ${this.timeout}ms）：\n${this.diagnoseFindFailure(target)}`);
+  }
+
+  /**
+   * 定位失败时生成诊断信息：逐个定位器说明「命中数量」与「可见性」，
+   * 帮助用户区分三种失败原因——定位器失效（0 命中）、定位器不唯一（多命中）、
+   * 元素存在但不可见（附 display/visibility/opacity/尺寸 具体原因）。
+   */
+  private diagnoseFindFailure(target: string): string {
+    const locators = RpaLocatorEngine.parseTargets(target);
+    const details = locators.map(({ type, value }) => {
+      const matches = RpaLocatorEngine.findAll(type, value);
+      if (matches.length === 1) {
+        const el = matches[0];
+        const style = window.getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        const reasons: string[] = [];
+        if (style.display === 'none') reasons.push('display:none');
+        if (style.visibility === 'hidden') reasons.push('visibility:hidden');
+        if (style.opacity === '0') reasons.push('opacity:0');
+        if (rect.width === 0 && rect.height === 0) reasons.push('宽高为0');
+        if (reasons.length > 0) {
+          return `· 命中 1 个但不可见（${reasons.join('、')}）: ${type}=${value}`;
+        }
+        return `· 命中 1 个且可见: ${type}=${value}`;
+      }
+      return `· 命中 ${matches.length} 个: ${type}=${value}`;
+    });
+    return details.length > 0 ? details.join('\n') : '（无可用的定位器）';
+  }
+
+  /**
+   * 判断元素是否可见（可交互）。
+   * 用 getBoundingClientRect 判断尺寸：SVG 元素没有 offsetWidth/offsetHeight（undefined），
+   * 会导致可见元素被误判为不可见。
+   *
+   * 特例：radio/checkbox 的原生 input 被组件库（如 TDesign）用 `opacity: 0` 视觉隐藏、
+   * 交互由关联的 label 代理，但仍可通过派发 click 事件正常触发选中，
+   * 因此不校验 opacity 与尺寸，只排除真正脱离文档的 display:none / visibility:hidden。
+   */
+  private isVisibleForInteraction(el: Element): boolean {
+    const style = window.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+
+    const isCheckableInput = el instanceof HTMLInputElement && (el.type === 'radio' || el.type === 'checkbox');
+    if (isCheckableInput) return true;
+
+    const rect = el.getBoundingClientRect();
+    return style.opacity !== '0' && rect.width > 0 && rect.height > 0;
   }
 
   private scrollIntoView(el: Element): void {

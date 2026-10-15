@@ -14,6 +14,23 @@ const NEW_TAB_TRIGGER_COMMANDS = new Set(['click', 'clickAt', 'doubleClick', 'ri
 /** 输入类事件：value 支持 /正则/ 字面量，回放时随机生成 */
 const INPUT_COMMANDS = new Set([RpaCommandType.Type, RpaCommandType.SendKeys]);
 
+/** 依赖 DOM 元素定位、失败后可安全重试的命令（智能等待） */
+const RETRYABLE_COMMANDS = new Set([
+  RpaCommandType.Click,
+  RpaCommandType.ClickAt,
+  RpaCommandType.DoubleClick,
+  RpaCommandType.RightClick,
+  RpaCommandType.Type,
+  RpaCommandType.SendKeys,
+  RpaCommandType.Select,
+  RpaCommandType.MouseOver,
+  RpaCommandType.ScrollToElement,
+  RpaCommandType.DragAndDrop,
+  RpaCommandType.StoreText,
+  RpaCommandType.StoreValue,
+  RpaCommandType.StoreAttribute,
+]);
+
 /** 速度到延迟的映射（speed 1-10） */
 function speedToDelay(speed: number): number {
   // speed 1 = 2000ms, speed 5 = 300ms, speed 10 = 0ms
@@ -40,8 +57,8 @@ export class RpaPlaybackEngine {
     return { ...this.state };
   }
 
-  /** 开始回放 */
-  async start(macro: RpaMacro, tabId: number): Promise<void> {
+  /** 开始回放（startIndex 支持断点续跑：从指定步骤重新开始） */
+  async start(macro: RpaMacro, tabId: number, startIndex = 0): Promise<void> {
     if (this.state.status === RpaRunStatus.Running) {
       throw new Error('Playback is already running');
     }
@@ -50,10 +67,11 @@ export class RpaPlaybackEngine {
     this.macro = macro;
     this.abortController = new AbortController();
 
+    const normalizedStart = Math.min(Math.max(0, startIndex), macro.commands.length);
     this.state = {
       status: RpaRunStatus.Running,
       macroId: macro.id,
-      currentCommandIndex: 0,
+      currentCommandIndex: normalizedStart,
       results: [],
       startTime: Date.now(),
       variables: {},
@@ -163,10 +181,11 @@ export class RpaPlaybackEngine {
       this.notifyStateChange();
       await this.notifyContentProgress(cmd);
 
-      const result = await this.executeCommand(cmd, idx);
+      const result = await this.executeCommandWithRetry(cmd, idx);
       this.state.results.push(result);
 
       if (!result.success && !cmd.command.startsWith('verify')) {
+        await this.captureFailureScreenshot(result);
         this.state.status = RpaRunStatus.Error;
         this.state.error = result.error;
         return;
@@ -215,9 +234,19 @@ export class RpaPlaybackEngine {
         await followNewTab;
       }
 
-      if (processedCmd.command.startsWith('store') && result.storedValue !== undefined) {
-        const varName = processedCmd.value || processedCmd.target;
-        this.state.variables[varName] = result.storedValue;
+      if (result.storedValue !== undefined) {
+        if (processedCmd.command.startsWith('store')) {
+          const varName = processedCmd.value || processedCmd.target;
+          this.state.variables[varName] = result.storedValue;
+        } else if (
+          processedCmd.command === RpaCommandType.ExecuteScript ||
+          processedCmd.command === RpaCommandType.ExecuteAsyncScript
+        ) {
+          // executeScript 的 value 字段作为「存储到哪个变量」；为空则不存
+          if (processedCmd.value) {
+            this.state.variables[processedCmd.value] = result.storedValue;
+          }
+        }
       }
 
       return {
@@ -236,6 +265,52 @@ export class RpaPlaybackEngine {
         duration: Date.now() - startTime,
         error: (error as Error).message,
       };
+    }
+  }
+
+  /** 执行单条事件（带智能等待重试）：DOM 命令失败时按 maxRetries 自动重试 */
+  private async executeCommandWithRetry(cmd: RpaCommand, index: number): Promise<RpaCommandResult> {
+    const maxRetries = this.config.maxRetries ?? 0;
+    let result = await this.executeCommand(cmd, index);
+    result.retries = 0;
+
+    if (result.success || maxRetries <= 0 || !this.isRetryableCommand(cmd.command)) {
+      return result;
+    }
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      if (this.abortController?.signal.aborted) {
+        throw new DOMException('Playback aborted', 'AbortError');
+      }
+      await this.sleep(500 * attempt);
+      if (this.abortController?.signal.aborted) {
+        throw new DOMException('Playback aborted', 'AbortError');
+      }
+      result = await this.executeCommand(cmd, index);
+      result.retries = attempt;
+      if (result.success) return result;
+    }
+
+    return result;
+  }
+
+  /** 判断命令是否可安全重试（依赖 DOM 元素定位、失败通常因异步渲染未就绪） */
+  private isRetryableCommand(command: string): boolean {
+    return RETRYABLE_COMMANDS.has(command as RpaCommandType);
+  }
+
+  /** 回放失败时自动截图并记录页面 URL（失败诊断） */
+  private async captureFailureScreenshot(result: RpaCommandResult): Promise<void> {
+    if (!this.config.screenshotOnError) return;
+    const tabId = this.state.tabId;
+    if (!tabId) return;
+    try {
+      const tab = await chrome.tabs.get(tabId);
+      const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+      result.screenshot = dataUrl;
+      result.pageUrl = tab.url;
+    } catch {
+      // 截图失败（如标签页不可见/无权限）时静默忽略，不影响回放结果
     }
   }
 

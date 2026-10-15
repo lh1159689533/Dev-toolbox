@@ -75,7 +75,7 @@
   },
   {
     "id": "rpa-recorder",
-    "name": "操作录制",
+    "name": "录制管理",
     "description": "录制浏览器操作并一键回放，自动完成重复自测流程",
     "category": "开发协作",
     "keywords": [

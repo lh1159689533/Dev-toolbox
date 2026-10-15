@@ -198,6 +198,66 @@ select {
   font-weight: 500;
 }
 
+/* ===== 失败诊断视图 ===== */
+.dt-failure-view {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: oklch(97% 0.02 25);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dt-failure-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dt-failure-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: oklch(45% 0.13 25);
+}
+
+.dt-failure-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dt-failure-step {
+  font-size: 12px;
+  color: oklch(40% 0.02 160);
+  font-weight: 500;
+}
+
+.dt-failure-error {
+  font-size: 12px;
+  color: oklch(45% 0.16 25);
+  word-break: break-all;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+
+.dt-failure-url {
+  font-size: 11px;
+  color: oklch(55% 0.02 160);
+  word-break: break-all;
+}
+
+.dt-failure-screenshot {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 6px;
+  border: 1px solid oklch(88% 0.02 160);
+  object-fit: contain;
+  align-self: flex-start;
+}
+
 .dt-cmd-toolbar {
   display: flex;
   align-items: center;

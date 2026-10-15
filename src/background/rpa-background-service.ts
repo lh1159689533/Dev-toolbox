@@ -112,9 +112,9 @@ class BackgroundRpaService {
 
       // ====== 回放 ======
       case RpaMessageType.START_PLAYBACK: {
-        const plPayload = message.payload as { macroId: string; tabId?: number };
+        const plPayload = message.payload as { macroId: string; tabId?: number; startIndex?: number };
         const tabId = plPayload.tabId || sender.tab?.id;
-        return this.startPlayback(plPayload.macroId, tabId);
+        return this.startPlayback(plPayload.macroId, tabId, plPayload.startIndex);
       }
 
       case RpaMessageType.STOP_PLAYBACK:
@@ -316,8 +316,8 @@ class BackgroundRpaService {
     return { success: true };
   }
 
-  /** 开始回放 */
-  private async startPlayback(macroId: string, tabId?: number): Promise<unknown> {
+  /** 开始回放（startIndex 支持断点续跑：从指定步骤重新开始） */
+  private async startPlayback(macroId: string, tabId?: number, startIndex = 0): Promise<unknown> {
     const macro = await getScript(macroId);
     if (!macro) {
       return { success: false, error: 'Macro not found' };
@@ -340,7 +340,7 @@ class BackgroundRpaService {
     }
 
     // 异步执行，不等待完成
-    this.playbackEngine.start(macro, targetTabId).catch(() => {
+    this.playbackEngine.start(macro, targetTabId, startIndex).catch(() => {
       // 错误已经在 engine 内部处理
     });
 
@@ -428,6 +428,19 @@ class BackgroundRpaService {
             target: event.value || event.url,
             value: '',
           });
+          break;
+
+        case 'mouseOver':
+          commands.push({ id: createId(), command: 'mouseOver', target, value: '' });
+          break;
+
+        case 'scroll':
+          // scrollTo 用 target 存「x,y」坐标
+          commands.push({ id: createId(), command: 'scrollTo', target: event.value || '', value: '' });
+          break;
+
+        case 'keydown':
+          commands.push({ id: createId(), command: 'sendKeys', target, value: event.value || '' });
           break;
 
         case 'submit':

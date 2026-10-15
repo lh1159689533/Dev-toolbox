@@ -115,7 +115,7 @@ export class RpaLocatorEngine {
     const parts: string[] = [];
     let current: Element | null = el;
 
-    while (current && current !== document.body && parts.length < 6) {
+    while (current && current !== document.body) {
       const selector = this.buildSelectorPart(current);
 
       if (selector) {
@@ -475,6 +475,25 @@ export class RpaLocatorEngine {
     return '//' + parts.join('/');
   }
 
+  /**
+   * 将 XPath 表达式中的 SVG 元素名步骤改写为 `*[local-name()='tag']` 形式。
+   *
+   * 背景：SVG 元素（svg/g/path/use 等）在 DOM 中属于 SVG 命名空间，而
+   * `document.evaluate` 在未传入命名空间解析器时，无前缀名称测试（如 `svg`）
+   * 只能匹配「无命名空间」的元素，导致含 SVG 的 XPath 恒为 0 命中。
+   * 改写为 local-name() 形式可绕过命名空间限制，保证播放端能定位到 SVG 图标内部元素。
+   *
+   * 仅改写「轴步骤位置」的标签名（/tag、//tag、表达式开头的 tag，且其后为 /、[ 或结尾），
+   * 不会误伤字符串字面量、属性值中的同名文本，也不会改写 text() 等函数。
+   */
+  static normalizeXPathForSvg(expr: string): string {
+    if (!expr) return expr;
+    const svgTags =
+      'svg|g|path|use|symbol|defs|mask|line|rect|circle|ellipse|polyline|polygon|text|tspan|image|marker|pattern|stop|filter';
+    const re = new RegExp(`(^|/)(${svgTags})(?=[/\\[]|$)`, 'g');
+    return expr.replace(re, (_match, sep: string, tag: string) => `${sep}*[local-name()='${tag}']`);
+  }
+
   /** 根据定位器查找元素 */
   static findElement(type: string, value: string): Element | null {
     try {
@@ -485,7 +504,7 @@ export class RpaLocatorEngine {
           return document.querySelector(value);
         case 'xpath': {
           const result = document.evaluate(
-            value,
+            this.normalizeXPathForSvg(value),
             document,
             null,
             XPathResult.FIRST_ORDERED_NODE_TYPE,
@@ -534,7 +553,7 @@ export class RpaLocatorEngine {
           return Array.from(document.querySelectorAll(value));
         case 'xpath': {
           const result = document.evaluate(
-            value,
+            this.normalizeXPathForSvg(value),
             document,
             null,
             XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,

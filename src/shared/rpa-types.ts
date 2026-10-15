@@ -173,6 +173,10 @@ export interface RpaCommandResult {
   storedValue?: string;
   /** 截图 base64（captureScreenshot） */
   screenshot?: string;
+  /** 执行/失败时的页面 URL（失败诊断用） */
+  pageUrl?: string;
+  /** 智能等待自动重试的次数（0 表示未重试） */
+  retries?: number;
 }
 
 /** 操作脚本运行状态 */
@@ -253,6 +257,7 @@ export enum RpaRecordEventType {
   Input = 'input',
   Change = 'change',
   KeyDown = 'keydown',
+  MouseOver = 'mouseOver',
   Select = 'select',
   Submit = 'submit',
   Scroll = 'scroll',
@@ -341,6 +346,8 @@ export interface RpaConfig {
   screenshotOnError: boolean;
   /** 运行速度（1-10） */
   speed: number;
+  /** 命令失败自动重试次数（智能等待，0 表示不重试） */
+  maxRetries: number;
 }
 
 /** 默认配置 */
@@ -350,6 +357,7 @@ export const DEFAULT_RPA_CONFIG: RpaConfig = {
   pageLoadTimeout: 30000,
   screenshotOnError: true,
   speed: 5,
+  maxRetries: 3,
 };
 
 /** 默认运行状态 */

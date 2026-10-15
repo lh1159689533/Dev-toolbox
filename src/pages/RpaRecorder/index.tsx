@@ -440,7 +440,7 @@ export default function RpaRecorder() {
 
   return (
     <div className="rpa-app">
-      <PageHeader title={tool?.name ?? '操作录制'} subtitle={tool?.description ?? ''} />
+      <PageHeader title={tool?.name ?? '录制管理'} subtitle={tool?.description ?? ''} />
 
       <div className="rpa-toolbar">
         <Button size="small" onClick={() => fileRef.current?.click()}>
