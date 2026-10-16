@@ -86,6 +86,38 @@ select {
   background: oklch(92% 0.04 160);
 }
 
+/* 回放中 / 暂停 的脚本行高亮 */
+.dt-script-item.playing {
+  background: oklch(94% 0.06 250);
+}
+.dt-script-item.playing:hover {
+  background: oklch(91% 0.07 250);
+}
+.dt-script-item.paused {
+  background: oklch(94% 0.06 70);
+}
+.dt-script-item.paused:hover {
+  background: oklch(91% 0.07 70);
+}
+
+/* 脚本名右侧状态徽标 */
+.dt-script-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  color: #fff;
+  white-space: nowrap;
+}
+.dt-script-badge--playing {
+  background: #0052d9;
+}
+.dt-script-badge--paused {
+  background: #ed7b2f;
+}
+
 .dt-script-name-row {
   display: flex;
   align-items: center;
@@ -403,6 +435,18 @@ select {
   background: oklch(95% 0.04 25);
 }
 
+.dt-cmd-row.disabled {
+  background: oklch(94% 0 0);
+}
+
+.dt-cmd-row.disabled:hover {
+  background: oklch(91% 0 0);
+}
+
+.dt-icon-btn.eye-off {
+  color: oklch(55% 0 0);
+}
+
 .dt-cmd-error {
   flex: 0 1 auto;
   min-width: 0;
@@ -474,22 +518,25 @@ select {
 
 .dt-delay-btn {
   border: none;
-  background: transparent;
+  background: #cfeddc;
   padding: 0;
   font-size: 10px;
   line-height: 9px;
   color: var(--td-text-muted);
   cursor: pointer;
   width: 28px;
-  height: 13px;
+  height: 12px;
+  margin-right: 1px;
 }
 
 .dt-delay-btn.increase {
   border-top-right-radius: 4px;
+  margin-bottom: 0.5px;
 }
 
 .dt-delay-btn.decrease {
   border-bottom-right-radius: 4px;
+  margin-top: 0.5px;
 }
 
 .dt-delay-btn.disabled:hover {

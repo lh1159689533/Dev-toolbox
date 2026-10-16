@@ -250,13 +250,28 @@ export class RpaRecorder {
   }
 
   /** 滚动防抖：停止滚动 300ms 后录制最终滚动位置 */
-  private onScrollHandler = (): void => {
+  private onScrollHandler = (e: Event): void => {
     if (this.scrollTimer) clearTimeout(this.scrollTimer);
+    // 在 setTimeout 外捕获滚动目标，避免 Event 对象在回调执行前被浏览器重置
+    const target = e.target;
     this.scrollTimer = setTimeout(() => {
-      const x = Math.round(window.scrollX);
-      const y = Math.round(window.scrollY);
-      if (x === 0 && y === 0) return;
-      this.sendRawEvent('scroll', `${x},${y}`);
+      // 整页滚动：scroll 事件的 target 是 document / documentElement
+      if (target === document || target === document.documentElement) {
+        const x = Math.round(window.scrollX);
+        const y = Math.round(window.scrollY);
+        if (x === 0 && y === 0) return;
+        this.sendRawEvent('scroll', `${x},${y}`);
+        return;
+      }
+
+      // 内部滚动容器（div/iframe 等 overflow 滚动）：记录容器的 scrollLeft/scrollTop
+      if (target instanceof Element) {
+        const x = Math.round(target.scrollLeft);
+        const y = Math.round(target.scrollTop);
+        if (x === 0 && y === 0) return;
+        // 用 sendEvent 携带容器定位器，回放时定位到该容器设置滚动位置
+        this.sendEvent('scroll', target, `${x},${y}`);
+      }
     }, 300);
   };
 

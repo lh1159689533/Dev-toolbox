@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "开发工具集",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "常用开发小工具集：TAPD 评论回填、JSON 格式化、时间戳转换、文本差异对比、JSON 重复 Key 检测、录制回放",
   "icons": {
     "16": "icons/icon-16.png",

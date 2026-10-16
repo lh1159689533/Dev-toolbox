@@ -114,6 +114,22 @@ function PlusIcon() {
   );
 }
 
+function EyeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+    </svg>
+  );
+}
+
+function EyeOffIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+      <path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z" />
+    </svg>
+  );
+}
+
 function IncreaseIcon() {
   return (
     <svg fill="none" viewBox="0 0 24 24" width="1em" height="1em">
@@ -337,6 +353,15 @@ function DevtoolsPanel() {
     }));
   };
 
+  /** 切换某条事件的启用状态（眼睛开关；open 事件由 UI 层禁止调用） */
+  const toggleCommandEnabled = (scriptId: string, index: number) => {
+    mutate(scriptId, (s) => ({
+      ...s,
+      updatedAt: Date.now(),
+      commands: s.commands.map((c, i) => (i === index ? { ...c, enabled: c.enabled === false } : c)),
+    }));
+  };
+
   /** 步进调整某条事件的 delay（毫秒），最小 0 */
   const stepDelay = (scriptId: string, index: number, delta: number) => {
     mutate(scriptId, (s) => ({
@@ -502,6 +527,12 @@ function DevtoolsPanel() {
       ? (playbackState.results[playbackState.results.length - 1] ?? null)
       : null;
 
+  // 回放控件只对「正在回放/暂停的那个脚本」显示；其它脚本显示正常的「回放」按钮
+  const isActivePlayback =
+    selected != null &&
+    playbackState.macroId === selected.id &&
+    (playbackState.status === RpaRunStatus.Running || playbackState.status === RpaRunStatus.Paused);
+
   const handlePause = () => {
     void chrome.runtime.sendMessage({ type: RpaMessageType.PAUSE_PLAYBACK });
   };
@@ -517,6 +548,8 @@ function DevtoolsPanel() {
   const selectScript = (id: string) => {
     setSelectedId(id);
     setSelectedCmdIndex(null);
+    // 切换脚本时退出「回放失败诊断」视图，避免右侧仍停留在上一个脚本的错误页
+    setShowDiagnosis(false);
   };
 
   const renderCommand = (cmd: RpaCommand, i: number) => {
@@ -534,7 +567,7 @@ function DevtoolsPanel() {
         key={cmd.id ?? i}
         className={`dt-cmd-row${selectedCmdIndex === i ? ' selected' : ''}${
           isExecuting ? ' executing' : ''
-        }${isFailed ? ' failed' : ''}`}
+        }${isFailed ? ' failed' : ''}${cmd.enabled === false ? ' disabled' : ''}`}
         onClick={() => setSelectedCmdIndex(i)}
       >
         <span className="dt-cmd-index">{i + 1}</span>
@@ -619,6 +652,16 @@ function DevtoolsPanel() {
           >
             ↓
           </button>
+          {cmd.command !== RpaCommandType.Open && (
+            <button
+              type="button"
+              className={`dt-icon-btn icon${cmd.enabled === false ? ' eye-off' : ''}`}
+              onClick={() => toggleCommandEnabled(scriptId, i)}
+              title={cmd.enabled === false ? '回放时跳过，点击启用' : '回放时执行，点击跳过'}
+            >
+              {cmd.enabled === false ? <EyeOffIcon /> : <EyeIcon />}
+            </button>
+          )}
           <button
             type="button"
             className="dt-icon-btn icon"
@@ -688,49 +731,56 @@ function DevtoolsPanel() {
           <div className="dt-empty">暂无脚本，点击「导入」或通过悬浮条录制</div>
         ) : (
           <ul className="dt-script-list">
-            {scripts.map((s) => (
-              <li
-                key={s.id}
-                className={`dt-script-item${s.id === selectedId ? ' selected' : ''}`}
-                onClick={() => selectScript(s.id)}
-              >
-                <div className="dt-script-name-row">
-                  {renamingId === s.id ? (
-                    <Input
-                      size="small"
-                      className="dt-rename-input"
-                      value={renamingName}
-                      onChange={(e) => setRenamingName(e.target.value)}
-                      onBlur={() => void commitRename(s.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') void commitRename(s.id);
-                        if (e.key === 'Escape') cancelRename();
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      autoFocus
-                    />
-                  ) : (
-                    <div className="dt-script-name" title={s.name}>
-                      {s.name}
-                    </div>
-                  )}
-                  <span className="dt-script-item-actions" onClick={(e) => e.stopPropagation()}>
-                    <span onClick={() => startRename(s)} title="重命名">
-                      <EditIcon />
+            {scripts.map((s) => {
+              const isPlaying = s.id === playbackState.macroId && playbackState.status === RpaRunStatus.Running;
+              const isPaused = s.id === playbackState.macroId && playbackState.status === RpaRunStatus.Paused;
+              const playbackCls = isPlaying ? ' playing' : isPaused ? ' paused' : '';
+              return (
+                <li
+                  key={s.id}
+                  className={`dt-script-item${s.id === selectedId ? ' selected' : ''}${playbackCls}`}
+                  onClick={() => selectScript(s.id)}
+                >
+                  <div className="dt-script-name-row">
+                    {renamingId === s.id ? (
+                      <Input
+                        size="small"
+                        className="dt-rename-input"
+                        value={renamingName}
+                        onChange={(e) => setRenamingName(e.target.value)}
+                        onBlur={() => void commitRename(s.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') void commitRename(s.id);
+                          if (e.key === 'Escape') cancelRename();
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        autoFocus
+                      />
+                    ) : (
+                      <div className="dt-script-name" title={s.name}>
+                        {s.name}
+                      </div>
+                    )}
+                    {isPlaying && <span className="dt-script-badge dt-script-badge--playing">▶ 回放中</span>}
+                    {isPaused && <span className="dt-script-badge dt-script-badge--paused">⏸ 已暂停</span>}
+                    <span className="dt-script-item-actions" onClick={(e) => e.stopPropagation()}>
+                      <span onClick={() => startRename(s)} title="重命名">
+                        <EditIcon />
+                      </span>
+                      <span onClick={() => handleExport(s)} title="导出">
+                        <ExportIcon />
+                      </span>
+                      <span onClick={() => void handleDeleteScript(s.id)} title="删除" className="danger">
+                        <TrashIcon />
+                      </span>
                     </span>
-                    <span onClick={() => handleExport(s)} title="导出">
-                      <ExportIcon />
-                    </span>
-                    <span onClick={() => void handleDeleteScript(s.id)} title="删除" className="danger">
-                      <TrashIcon />
-                    </span>
-                  </span>
-                </div>
-                <div className="dt-script-meta">
-                  {formatTime(s.createdAt)} · {s.commands.length} 条事件
-                </div>
-              </li>
-            ))}
+                  </div>
+                  <div className="dt-script-meta">
+                    {formatTime(s.createdAt)} · {s.commands.length} 条事件
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </aside>
@@ -788,22 +838,22 @@ function DevtoolsPanel() {
                 />
                 <span className="dt-speed-word">快</span>
                 <span className="dt-speed-value">{selected.speed ?? 5}</span>
-                {playbackState.status === RpaRunStatus.Running && (
+                {isActivePlayback && playbackState.status === RpaRunStatus.Running && (
                   <button type="button" className="dt-icon-btn" onClick={handlePause}>
                     暂停
                   </button>
                 )}
-                {playbackState.status === RpaRunStatus.Paused && (
+                {isActivePlayback && playbackState.status === RpaRunStatus.Paused && (
                   <button type="button" className="dt-icon-btn" onClick={handleResume}>
                     继续
                   </button>
                 )}
-                {(playbackState.status === RpaRunStatus.Running || playbackState.status === RpaRunStatus.Paused) && (
+                {isActivePlayback && (
                   <button type="button" className="dt-icon-btn" onClick={handleStop}>
                     停止
                   </button>
                 )}
-                {playbackState.status !== RpaRunStatus.Running && playbackState.status !== RpaRunStatus.Paused && (
+                {!isActivePlayback && (
                   <button type="button" className="dt-icon-btn" onClick={() => handlePlay()}>
                     回放
                   </button>

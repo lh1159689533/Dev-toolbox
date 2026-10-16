@@ -67,6 +67,7 @@ export enum RpaCommandType {
   // 滚动
   ScrollTo = 'scrollTo',
   ScrollToElement = 'scrollToElement',
+  ScrollContainerTo = 'scrollContainerTo',
 
   // 鼠标悬停
   MouseOver = 'mouseOver',
@@ -93,6 +94,8 @@ export interface RpaCommand {
   description?: string;
   /** 该步执行完成后的等待时长（毫秒）；未设置时回退到全局 speed */
   delay?: number;
+  /** 是否启用（眼睛开关）；false 时回放跳过该步，缺省视为 true */
+  enabled?: boolean;
 }
 
 // ========== 操作脚本定义 ==========
@@ -305,9 +308,17 @@ export enum RpaMessageType {
   // Content Script 事件执行
   EXECUTE_COMMAND = 'RPA_EXECUTE_COMMAND',
   EXECUTE_COMMAND_RESULT = 'RPA_EXECUTE_COMMAND_RESULT',
+  // 取消正在执行的命令（停止回放时通知 content script 中止等待元素）
+  CANCEL_EXECUTION = 'RPA_CANCEL_EXECUTION',
+  // 暂停/恢复正在执行的命令（暂停回放时冻结 content script 的等待元素轮询）
+  PAUSE_EXECUTION = 'RPA_PAUSE_EXECUTION',
+  RESUME_EXECUTION = 'RPA_RESUME_EXECUTION',
 
   // 回放进度通知（Background → Content Script）
   PLAYBACK_PROGRESS = 'RPA_PLAYBACK_PROGRESS',
+
+  // 预取光标动画（Background → Content Script，在 delay 间隙提前把光标移到下一步目标）
+  PRE_MOVE_CURSOR = 'RPA_PRE_MOVE_CURSOR',
 
   // 元素选择
   START_ELEMENT_PICKER = 'RPA_START_ELEMENT_PICKER',

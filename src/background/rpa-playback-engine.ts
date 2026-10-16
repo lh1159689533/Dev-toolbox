@@ -14,6 +14,19 @@ const NEW_TAB_TRIGGER_COMMANDS = new Set(['click', 'clickAt', 'doubleClick', 'ri
 /** 输入类事件：value 支持 /正则/ 字面量，回放时随机生成 */
 const INPUT_COMMANDS = new Set([RpaCommandType.Type, RpaCommandType.SendKeys]);
 
+/** 有 DOM 元素定位、需要光标预取的交互命令 */
+const CURSOR_COMMANDS = new Set([
+  RpaCommandType.Click,
+  RpaCommandType.ClickAt,
+  RpaCommandType.DoubleClick,
+  RpaCommandType.RightClick,
+  RpaCommandType.Type,
+  RpaCommandType.SendKeys,
+  RpaCommandType.Select,
+  RpaCommandType.MouseOver,
+  RpaCommandType.DragAndDrop,
+]);
+
 /** 依赖 DOM 元素定位、失败后可安全重试的命令（智能等待） */
 const RETRYABLE_COMMANDS = new Set([
   RpaCommandType.Click,
@@ -25,6 +38,7 @@ const RETRYABLE_COMMANDS = new Set([
   RpaCommandType.Select,
   RpaCommandType.MouseOver,
   RpaCommandType.ScrollToElement,
+  RpaCommandType.ScrollContainerTo,
   RpaCommandType.DragAndDrop,
   RpaCommandType.StoreText,
   RpaCommandType.StoreValue,
@@ -34,7 +48,8 @@ const RETRYABLE_COMMANDS = new Set([
 /** 速度到延迟的映射（speed 1-10） */
 function speedToDelay(speed: number): number {
   // speed 1 = 2000ms, speed 5 = 300ms, speed 10 = 0ms
-  return Math.max(0, Math.round(2000 * Math.pow(0.7, speed - 1)));
+  // 最快档限制最小间隔 100ms，保证回放时光标有基本停顿可看清
+  return Math.max(100, Math.round(2000 * Math.pow(0.7, speed - 1)));
 }
 
 /**
@@ -46,6 +61,8 @@ export class RpaPlaybackEngine {
   private config: RpaConfig = { ...DEFAULT_RPA_CONFIG };
   private macro: RpaMacro | null = null;
   private abortController: AbortController | null = null;
+  /** 当前运行的完整生命周期（含收尾）Promise；用于新回放启动前等待旧回放完全退出 */
+  private runPromise: Promise<void> | null = null;
   private onStateChange?: (state: RpaRunState) => void;
 
   constructor(onStateChange?: (state: RpaRunState) => void) {
@@ -59,9 +76,9 @@ export class RpaPlaybackEngine {
 
   /** 开始回放（startIndex 支持断点续跑：从指定步骤重新开始） */
   async start(macro: RpaMacro, tabId: number, startIndex = 0): Promise<void> {
-    if (this.state.status === RpaRunStatus.Running) {
-      throw new Error('Playback is already running');
-    }
+    // 已有回放在进行中/暂停时：先终止旧回放并等待其完全退出，
+    // 避免新旧两个循环共享 state/macro 造成状态互相污染（表现为两个脚本状态串台）
+    await this.cancelPreviousRun();
 
     this.config = { ...DEFAULT_RPA_CONFIG, speed: macro.speed ?? DEFAULT_RPA_CONFIG.speed };
     this.macro = macro;
@@ -80,6 +97,12 @@ export class RpaPlaybackEngine {
     };
     this.notifyStateChange();
 
+    this.runPromise = this.run();
+    await this.runPromise;
+  }
+
+  /** 本次回放主体（含收尾）：独立成 runPromise，供新回放等待旧回放完全退出 */
+  private async run(): Promise<void> {
     try {
       await this.executeLoop();
     } catch (error) {
@@ -99,12 +122,34 @@ export class RpaPlaybackEngine {
     }
   }
 
+  /** 终止上一段仍在进行/暂停的回放，并等待其完整退出 */
+  private async cancelPreviousRun(): Promise<void> {
+    if (!this.runPromise) return;
+
+    if (this.state.status === RpaRunStatus.Running || this.state.status === RpaRunStatus.Paused) {
+      this.abortController?.abort();
+      const prevTabId = this.state.tabId;
+      if (prevTabId) {
+        // 解除 content script 中被冻结/等待中的命令，避免旧循环永久阻塞
+        void chrome.tabs.sendMessage(prevTabId, { type: RpaMessageType.CANCEL_EXECUTION }).catch(() => {});
+      }
+    }
+
+    await this.runPromise.catch(() => {});
+    this.runPromise = null;
+  }
+
   /** 停止回放 */
   stop(): void {
     this.abortController?.abort();
     this.state.status = RpaRunStatus.Stopped;
     this.notifyStateChange();
     void this.notifyContentProgress();
+    // 通知 content script 取消正在执行的命令（等待元素出现的轮询）
+    const tabId = this.state.tabId;
+    if (tabId) {
+      void chrome.tabs.sendMessage(tabId, { type: RpaMessageType.CANCEL_EXECUTION }).catch(() => {});
+    }
   }
 
   /** 暂停回放 */
@@ -113,6 +158,11 @@ export class RpaPlaybackEngine {
       this.state.status = RpaRunStatus.Paused;
       this.notifyStateChange();
       void this.notifyContentProgress();
+      // 通知 content script 冻结正在执行的命令（等待元素出现的轮询）
+      const tabId = this.state.tabId;
+      if (tabId) {
+        void chrome.tabs.sendMessage(tabId, { type: RpaMessageType.PAUSE_EXECUTION }).catch(() => {});
+      }
     }
   }
 
@@ -122,6 +172,11 @@ export class RpaPlaybackEngine {
       this.state.status = RpaRunStatus.Running;
       this.notifyStateChange();
       void this.notifyContentProgress();
+      // 通知 content script 恢复被冻结的命令
+      const tabId = this.state.tabId;
+      if (tabId) {
+        void chrome.tabs.sendMessage(tabId, { type: RpaMessageType.RESUME_EXECUTION }).catch(() => {});
+      }
     }
   }
 
@@ -141,6 +196,14 @@ export class RpaPlaybackEngine {
     }
 
     if (!this.macro) return;
+
+    // 跳过被禁用（眼睛关闭）的命令
+    while (
+      this.state.currentCommandIndex < this.macro.commands.length &&
+      this.macro.commands[this.state.currentCommandIndex].enabled === false
+    ) {
+      this.state.currentCommandIndex++;
+    }
 
     const idx = this.state.currentCommandIndex;
     if (idx >= this.macro.commands.length) {
@@ -178,6 +241,12 @@ export class RpaPlaybackEngine {
       const idx = this.state.currentCommandIndex;
       const cmd = this.macro.commands[idx];
 
+      // 跳过被禁用（眼睛关闭）的命令：不执行、不记录结果、不计失败
+      if (cmd.enabled === false) {
+        this.state.currentCommandIndex = idx + 1;
+        continue;
+      }
+
       this.notifyStateChange();
       await this.notifyContentProgress(cmd);
 
@@ -194,8 +263,16 @@ export class RpaPlaybackEngine {
       const nextIdx = this.getNextCommandIndex(cmd, idx, result);
       this.state.currentCommandIndex = nextIdx;
 
-      const delay =
-        cmd.delay !== undefined && cmd.delay >= 0 ? cmd.delay : speedToDelay(this.config.speed);
+      const delay = this.getCommandDelay(cmd);
+
+      // 预取下一步光标动画：下一步是 DOM 交互命令时，在 delay 间隙提前把光标移到目标
+      if (delay > 0 && nextIdx < this.macro.commands.length) {
+        const nextCmd = this.macro.commands[nextIdx];
+        if (CURSOR_COMMANDS.has(nextCmd.command as RpaCommandType) && nextCmd.target) {
+          void this.preMoveCursor(nextCmd, delay);
+        }
+      }
+
       if (delay > 0) {
         await this.sleep(delay);
       }
@@ -333,6 +410,8 @@ export class RpaPlaybackEngine {
           target: cmd.target,
           value: cmd.value,
           timeout: this.config.elementTimeout,
+          // 滚动命令的平滑过渡时长：跟随回放速度（步骤间隔 delay）
+          delay: this.getCommandDelay(cmd),
         },
       });
       return (
@@ -710,6 +789,11 @@ export class RpaPlaybackEngine {
     });
   }
 
+  /** 计算某条命令执行后的步骤间隔（显式 delay 优先，否则按速度换算；speed 默认值已限 100ms 下限） */
+  private getCommandDelay(cmd: RpaCommand): number {
+    return cmd.delay !== undefined && cmd.delay >= 0 ? cmd.delay : speedToDelay(this.config.speed);
+  }
+
   /** sleep 工具 */
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -718,6 +802,24 @@ export class RpaPlaybackEngine {
   /** 通知状态变化 */
   private notifyStateChange(): void {
     this.onStateChange?.({ ...this.state });
+  }
+
+  /** 预取：在 delay 间隙通知 content 提前把光标动画移动到下一步目标 */
+  private async preMoveCursor(nextCmd: RpaCommand, delay: number): Promise<void> {
+    const tabId = this.state.tabId;
+    if (!tabId) return;
+    try {
+      const processed = this.replaceVariables(nextCmd);
+      await chrome.tabs.sendMessage(tabId, {
+        type: RpaMessageType.PRE_MOVE_CURSOR,
+        payload: {
+          target: processed.target,
+          delay,
+        },
+      });
+    } catch {
+      // 预取失败静默忽略（下一步执行时会直接定位）
+    }
   }
 
   /** 向 Content Script 发送回放进度，驱动页面端指示器 */

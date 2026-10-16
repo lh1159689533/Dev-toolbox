@@ -4,11 +4,13 @@ import { RpaElementPicker } from './element-picker';
 import { PlaybackIndicator } from './playback-indicator';
 import { PageToast } from './page-toast';
 import { FloatingBar, isBarOpenForCurrentOrigin } from './floating-bar';
-import { RpaMessageType, RpaRecordingStatus } from '../shared/rpa-types';
+import { PlaybackCursor } from './playback-cursor';
+import { RpaMessageType, RpaRecordingStatus, RpaRunStatus } from '../shared/rpa-types';
 import type { RpaPageToastPayload, RpaPlaybackProgressPayload } from '../shared/rpa-types';
 
 const recorder = new RpaRecorder();
-const executor = new RpaCommandExecutor();
+const playbackCursor = new PlaybackCursor();
+const executor = new RpaCommandExecutor(10000, playbackCursor);
 const picker = new RpaElementPicker();
 const playbackIndicator = new PlaybackIndicator();
 const pageToast = new PageToast();
@@ -82,19 +84,52 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       break;
 
     case RpaMessageType.EXECUTE_COMMAND: {
-      const { command, target, value, timeout } = message.payload as {
+      const { command, target, value, timeout, delay } = message.payload as {
         command: string;
         target: string;
         value: string;
         timeout?: number;
+        delay?: number;
       };
-      executor.execute(command, target, value, timeout).then((result) => sendResponse(result));
+      executor.execute(command, target, value, timeout, delay).then((result) => sendResponse(result));
       return true; // 异步响应
     }
 
-    case RpaMessageType.PLAYBACK_PROGRESS:
-      playbackIndicator.update(message.payload as RpaPlaybackProgressPayload);
+    case RpaMessageType.CANCEL_EXECUTION:
+      executor.cancel();
+      sendResponse({ success: true });
       break;
+
+    case RpaMessageType.PAUSE_EXECUTION:
+      executor.pause();
+      sendResponse({ success: true });
+      break;
+
+    case RpaMessageType.RESUME_EXECUTION:
+      executor.resume();
+      sendResponse({ success: true });
+      break;
+
+    case RpaMessageType.PRE_MOVE_CURSOR: {
+      const { target, delay } = message.payload as { target: string; delay: number };
+      void executor.preMoveCursor(target, delay);
+      break;
+    }
+
+    case RpaMessageType.PLAYBACK_PROGRESS: {
+      const progressPayload = message.payload as RpaPlaybackProgressPayload;
+      playbackIndicator.update(progressPayload);
+      // 回放结束/停止/出错/空闲时隐藏模拟光标
+      if (
+        progressPayload.status === RpaRunStatus.Completed ||
+        progressPayload.status === RpaRunStatus.Stopped ||
+        progressPayload.status === RpaRunStatus.Error ||
+        progressPayload.status === RpaRunStatus.Idle
+      ) {
+        playbackCursor.hide();
+      }
+      break;
+    }
 
     case RpaMessageType.SHOW_PAGE_TOAST: {
       const toastPayload = message.payload as RpaPageToastPayload;

@@ -1,4 +1,4 @@
-import { RpaRunStatus } from '../shared/rpa-types';
+import { RpaMessageType, RpaRunStatus } from '../shared/rpa-types';
 import type { RpaPlaybackProgressPayload } from '../shared/rpa-types';
 
 /** 回放进度指示器：状态主题 + 进度条 + 当前事件（对齐 rocket-agent-plugin PlaybackIndicator） */
@@ -10,6 +10,9 @@ export class PlaybackIndicator {
   private statusText: HTMLElement | null = null;
   private stepText: HTMLElement | null = null;
   private commandText: HTMLElement | null = null;
+  private resumeBtn: HTMLButtonElement | null = null;
+  private closeBtn: HTMLButtonElement | null = null;
+  private currentStatus: RpaRunStatus = RpaRunStatus.Idle;
   private autoHideTimer: ReturnType<typeof setTimeout> | null = null;
 
   /** 更新进度（自动创建/显示/隐藏指示器） */
@@ -49,7 +52,7 @@ export class PlaybackIndicator {
       },
       [RpaRunStatus.Error]: {
         bg: 'rgba(213, 73, 65, 0.92)',
-        icon: '✗',
+        icon: '',
         label: `${macroName} 回放失败`,
         anim: 'none',
       },
@@ -63,9 +66,21 @@ export class PlaybackIndicator {
 
     const theme = themes[status] || themes[RpaRunStatus.Running];
 
+    this.currentStatus = status;
+    // 仅暂停（点击继续）与错误（手动关闭）两种状态需要交互，其余不拦截页面事件
+    const interactive = status === RpaRunStatus.Paused || status === RpaRunStatus.Error;
     if (this.container) {
       this.container.style.background = theme.bg;
       this.container.style.animation = theme.anim;
+      this.container.style.pointerEvents = interactive ? 'auto' : 'none';
+      this.container.style.cursor = status === RpaRunStatus.Paused ? 'pointer' : 'default';
+    }
+
+    if (this.resumeBtn) {
+      this.resumeBtn.style.display = status === RpaRunStatus.Paused ? 'block' : 'none';
+    }
+    if (this.closeBtn) {
+      this.closeBtn.style.display = status === RpaRunStatus.Error ? 'block' : 'none';
     }
 
     if (this.statusIcon) {
@@ -125,6 +140,9 @@ export class PlaybackIndicator {
         this.statusText = null;
         this.stepText = null;
         this.commandText = null;
+        this.resumeBtn = null;
+        this.closeBtn = null;
+        this.currentStatus = RpaRunStatus.Idle;
       }, 350);
     }
   }
@@ -180,6 +198,38 @@ export class PlaybackIndicator {
     row1.appendChild(this.statusIcon);
     row1.appendChild(this.statusText);
     row1.appendChild(this.stepText);
+
+    // 暂停时的「继续」按钮
+    this.resumeBtn = document.createElement('button');
+    this.resumeBtn.type = 'button';
+    this.resumeBtn.textContent = '继续';
+    this.resumeBtn.style.cssText = `
+      display:none; border:1px solid rgba(255,255,255,0.85); background:transparent;
+      color:#fff; cursor:pointer; font-size:12px; padding:2px 8px; border-radius:6px;
+      line-height:1; flex-shrink:0;
+    `;
+    this.resumeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      void chrome.runtime.sendMessage({ type: RpaMessageType.RESUME_PLAYBACK }).catch(() => {});
+    });
+    row1.appendChild(this.resumeBtn);
+
+    // 错误时的「关闭」按钮
+    this.closeBtn = document.createElement('button');
+    this.closeBtn.type = 'button';
+    this.closeBtn.setAttribute('aria-label', '关闭');
+    this.closeBtn.textContent = '×';
+    this.closeBtn.style.cssText = `
+      display:none; border:none; background:transparent; cursor:pointer;
+      padding:0 2px; font-size:18px; line-height:1; color:inherit; opacity:0.8; 
+      flex-shrink:0;margin-top:-3px;margin-right:-8px;
+    `;
+    this.closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.hide();
+    });
+    row1.appendChild(this.closeBtn);
+
     this.container.appendChild(row1);
 
     const progressTrack = document.createElement('div');
@@ -203,6 +253,13 @@ export class PlaybackIndicator {
       min-height: 15px;
     `;
     this.container.appendChild(this.commandText);
+
+    // 暂停时点击整条提示即继续回放（与「继续」按钮等效）
+    this.container.addEventListener('click', () => {
+      if (this.currentStatus === RpaRunStatus.Paused) {
+        void chrome.runtime.sendMessage({ type: RpaMessageType.RESUME_PLAYBACK }).catch(() => {});
+      }
+    });
 
     document.body.appendChild(this.container);
   }

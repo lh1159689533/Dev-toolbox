@@ -3,6 +3,9 @@ import type { PageToastKind, RpaCommand, RpaMacro, RpaRecordedEvent, RpaRunState
 import { createId, createMacroId, getScript, saveScript, updateScript } from '../shared/rpa-storage';
 import { RpaPlaybackEngine } from './rpa-playback-engine';
 
+/** open 命令录制时的默认步骤间隔（ms）：open 后页面可能仍有异步渲染，预留 2s 等待 */
+const OPEN_COMMAND_DEFAULT_DELAY = 2000;
+
 /**
  * RPA Background 服务
  * 处理 RPA 相关消息：录制事件收集组装、回放调度、元素选择转发
@@ -339,6 +342,18 @@ class BackgroundRpaService {
       return { success: false, error: '当前页面无法注入脚本，请刷新页面后重试' };
     }
 
+    // 【诊断实验】聚焦目标窗口：验证 windows.update(focused) 能否使页面 document.hasFocus() 变 true
+    try {
+      const tab = await chrome.tabs.get(targetTabId);
+      await chrome.tabs.update(targetTabId, { active: true });
+      if (tab.windowId !== undefined) {
+        await chrome.windows.update(tab.windowId, { focused: true });
+      }
+      console.log('[RPA-debug:focusWindow] done | tab=', targetTabId, 'windowId=', tab.windowId);
+    } catch (e) {
+      console.warn('[RPA-debug:focusWindow] failed:', e);
+    }
+
     // 异步执行，不等待完成
     this.playbackEngine.start(macro, targetTabId, startIndex).catch(() => {
       // 错误已经在 engine 内部处理
@@ -385,6 +400,7 @@ class BackgroundRpaService {
         command: 'open',
         target: events[0].url,
         value: '',
+        delay: OPEN_COMMAND_DEFAULT_DELAY,
       });
     }
 
@@ -427,6 +443,7 @@ class BackgroundRpaService {
             command: 'open',
             target: event.value || event.url,
             value: '',
+            delay: OPEN_COMMAND_DEFAULT_DELAY,
           });
           break;
 
@@ -435,8 +452,13 @@ class BackgroundRpaService {
           break;
 
         case 'scroll':
-          // scrollTo 用 target 存「x,y」坐标
-          commands.push({ id: createId(), command: 'scrollTo', target: event.value || '', value: '' });
+          if (event.locators.length > 0) {
+            // 内部滚动容器：target 存容器定位器，value 存「scrollLeft,scrollTop」
+            commands.push({ id: createId(), command: 'scrollContainerTo', target, value: event.value || '' });
+          } else {
+            // window 整页滚动：scrollTo 用 target 存「x,y」坐标
+            commands.push({ id: createId(), command: 'scrollTo', target: event.value || '', value: '' });
+          }
           break;
 
         case 'keydown':
