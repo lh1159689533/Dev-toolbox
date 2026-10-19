@@ -12,11 +12,43 @@ import type { RpaCommand, RpaMacro, RpaRunState } from '../shared/rpa-types';
 import { createId, deleteScript, importScripts, listScripts, renameScript, updateScript } from '../shared/rpa-storage';
 import Input from '../components/Input';
 import Select from '../components/Select';
+import Textarea from '../components/Textarea';
+import '../styles/tokens.css';
+import '../styles/scrollbar.css';
 import './panel.css';
 
 const COMMAND_OPTIONS = Object.values(RpaCommandType);
 
-type MsgKind = 'success' | 'error' | 'info';
+/** 回放时不读取 value 字段的命令：事件列表里隐藏 value 输入框，避免误填产生歧义 */
+const NO_VALUE_COMMANDS = new Set<string>([
+  RpaCommandType.Click,
+  RpaCommandType.DoubleClick,
+  RpaCommandType.RightClick,
+  RpaCommandType.MouseOver,
+  RpaCommandType.Open,
+  RpaCommandType.GoBack,
+  RpaCommandType.GoForward,
+  RpaCommandType.Refresh,
+  RpaCommandType.WaitForElementPresent,
+  RpaCommandType.WaitForElementVisible,
+  RpaCommandType.WaitForElementNotPresent,
+  RpaCommandType.AssertElementPresent,
+  RpaCommandType.VerifyElementPresent,
+  RpaCommandType.AssertTitle,
+  RpaCommandType.VerifyTitle,
+  RpaCommandType.If,
+  RpaCommandType.Else,
+  RpaCommandType.ElseIf,
+  RpaCommandType.End,
+  RpaCommandType.While,
+  RpaCommandType.Times,
+  RpaCommandType.CaptureScreenshot,
+  RpaCommandType.Echo,
+  RpaCommandType.ScrollTo,
+  RpaCommandType.ScrollToElement,
+]);
+
+type MsgKind = 'success' | 'error' | 'info' | 'loading';
 type MsgState = { text: string; kind: MsgKind } | null;
 
 /** 触发 JSON 文件下载 */
@@ -41,6 +73,16 @@ function parseDelay(raw: string): number | undefined {
   const n = parseInt(trimmed, 10);
   if (Number.isNaN(n) || n < 0) return undefined;
   return n;
+}
+
+/** target 显示：把 ` || ` 分隔符转成换行，便于逐类型（xpath/css/id…）查看 */
+function targetToLines(target: string): string {
+  return target.split(/\s*\|\|\s*/).join('\n');
+}
+
+/** target 保存：把多行文本转回 ` || ` 分隔（与 targetToLines 互为逆操作，保证受控组件光标稳定） */
+function linesToTarget(text: string): string {
+  return text.split('\n').join(' || ');
 }
 
 function formatTime(ts: number): string {
@@ -214,7 +256,7 @@ function DevtoolsPanel() {
 
   const selected = scripts.find((s) => s.id === selectedId) ?? null;
 
-  /** 显示一条消息：success/info 5 秒后自动消失，error 保持常驻 */
+  /** 显示一条消息：success/info 5 秒后自动消失，error/loading 保持常驻 */
   const showMsg = useCallback((text: string, kind: MsgKind = 'info') => {
     if (msgTimerRef.current) {
       clearTimeout(msgTimerRef.current);
@@ -417,15 +459,36 @@ function DevtoolsPanel() {
 
   // ===== 脚本级操作 =====
   const handleExport = (script: RpaMacro) => {
-    downloadJson(`${safeFilename(script.name)}.json`, script);
+    showMsg('导出中...', 'loading');
+    window.setTimeout(() => {
+      try {
+        downloadJson(`${safeFilename(script.name)}.json`, script);
+        showMsg('导出成功', 'success');
+      } catch {
+        showMsg('导出失败', 'error');
+      }
+    }, 300);
   };
 
   const handleExportAll = () => {
-    downloadJson('rpa-scripts.json', scripts);
+    showMsg('导出中...', 'loading');
+    window.setTimeout(() => {
+      try {
+        downloadJson('rpa-scripts.json', scripts);
+        showMsg('导出成功', 'success');
+      } catch {
+        showMsg('导出失败', 'error');
+      }
+    }, 300);
   };
 
   const handleImportFile = (file: File) => {
+    // 选择文件后立即显示 loading，覆盖「读文件 + 解析 + 写入」全过程
+    showMsg('导入中...', 'loading');
     const reader = new FileReader();
+    reader.onerror = () => {
+      showMsg('导入失败：文件读取失败', 'error');
+    };
     reader.onload = () => {
       try {
         const parsed = JSON.parse(String(reader.result)) as unknown;
@@ -434,18 +497,24 @@ function DevtoolsPanel() {
         for (const item of list) {
           if (item && typeof item === 'object') {
             const s = item as RpaMacro;
-            if (typeof s.id === 'string' && Array.isArray(s.commands)) valid.push(s);
+            if (Array.isArray(s.commands)) valid.push(s);
           }
         }
         if (valid.length === 0) {
           showMsg('导入失败：未找到有效脚本', 'error');
           return;
         }
-        void importScripts(valid).then(async () => {
-          const next = await reload();
-          if (!selectedIdRef.current && next.length) setSelectedId(next[0].id);
-          showMsg(`已导入 ${valid.length} 个脚本`, 'success');
-        });
+        // 保证 loading 至少可见（storage 写入极快，否则会被成功提示瞬间覆盖）
+        const minDelay = new Promise<void>((resolve) => window.setTimeout(resolve, 300));
+        void Promise.all([importScripts(valid), minDelay])
+          .then(async ([{ imported, skipped }]) => {
+            const next = await reload();
+            if (!selectedIdRef.current && next.length) setSelectedId(next[0].id);
+            showMsg(skipped > 0 ? `已导入 ${imported} 个，跳过 ${skipped} 个` : `已导入 ${imported} 个`, 'success');
+          })
+          .catch(() => {
+            showMsg('导入失败', 'error');
+          });
       } catch {
         showMsg('导入失败：JSON 解析错误', 'error');
       }
@@ -578,20 +647,24 @@ function DevtoolsPanel() {
           options={COMMAND_OPTIONS.map((c) => ({ value: c, label: c }))}
           onChange={(v) => updateCommandField(scriptId, i, 'command', v)}
         />
-        <Input
+        <Textarea
           size="small"
-          className="dt-cmd-input"
+          className="dt-cmd-input dt-cmd-target"
+          rows={1}
           placeholder="target（定位器）"
-          value={cmd.target}
-          onChange={(e) => updateCommandField(scriptId, i, 'target', e.target.value)}
+          value={targetToLines(cmd.target)}
+          onChange={(e) => updateCommandField(scriptId, i, 'target', linesToTarget(e.target.value))}
         />
-        <Input
-          size="small"
-          className="dt-cmd-value"
-          placeholder="value（参数）"
-          value={cmd.value}
-          onChange={(e) => updateCommandField(scriptId, i, 'value', e.target.value)}
-        />
+        {
+          <Input
+            size="small"
+            className="dt-cmd-value"
+            placeholder="value（参数）"
+            value={cmd.value}
+            onChange={(e) => updateCommandField(scriptId, i, 'value', e.target.value)}
+            style={{ visibility: NO_VALUE_COMMANDS.has(cmd.command) ? 'hidden' : 'visible' }}
+          />
+        }
         <div className="dt-cmd-delay-wrap" onClick={(e) => e.stopPropagation()}>
           <Input
             size="small"
@@ -670,14 +743,16 @@ function DevtoolsPanel() {
           >
             <PlusIcon />
           </button>
-          <button
-            type="button"
-            className="dt-icon-btn danger icon"
-            onClick={() => removeCommand(scriptId, i)}
-            title="删除"
-          >
-            <TrashIcon />
-          </button>
+          {cmd.command !== RpaCommandType.Open && (
+            <button
+              type="button"
+              className="dt-icon-btn danger icon"
+              onClick={() => removeCommand(scriptId, i)}
+              title="删除"
+            >
+              <TrashIcon />
+            </button>
+          )}
         </span>
       </div>
     );
@@ -789,6 +864,7 @@ function DevtoolsPanel() {
       <section className="dt-right">
         {msg && (
           <div className={`dt-msg dt-msg--${msg.kind}`}>
+            {msg.kind === 'loading' && <span className="dt-msg-spinner" aria-hidden="true" />}
             <span className="dt-msg-text">{msg.text}</span>
             {msg.kind === 'error' && (
               <button type="button" className="dt-msg-close icon" onClick={clearMsg} aria-label="关闭">

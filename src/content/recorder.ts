@@ -1,4 +1,4 @@
-import { RpaMessageType } from '../shared/rpa-types';
+import { RpaLocator, RpaMessageType } from '../shared/rpa-types';
 import { RpaLocatorEngine } from './locator';
 
 /** 录制器：捕获 DOM 事件并实时上报（对齐 rocket-agent-plugin RpaRecorder） */
@@ -43,8 +43,17 @@ export class RpaRecorder {
     this.eventCount = baseCount;
     this.changedElements = new WeakSet<Element>();
     this.pendingInput = null;
+    this.lastPointerDownTarget = null;
+    this.lastMouseDownTarget = null;
 
     this.addHandler('click', this.onClickHandler.bind(this));
+    // 按压目标跟踪：某些页面（如 radix 组件库）会对 pointerdown 调用 preventDefault，
+    // 按 Pointer Events 规范这将抑制后续 mousedown/mouseup 兼容事件，
+    // Chromium 会把这种 click 重定向到 documentElement(html)。
+    // 因此监听 pointerdown/mousedown 记录真实按压目标，click 目标异常时回退使用。
+    // 注意挂 window 捕获（先于 document 捕获，不受页面 document 层 stopPropagation 影响）。
+    window.addEventListener('pointerdown', this.onPointerDownTarget, true);
+    window.addEventListener('mousedown', this.onMouseDownTarget, true);
     this.addHandler('dblclick', this.onDblClickHandler.bind(this));
     this.addHandler('contextmenu', this.onContextMenuHandler.bind(this));
     this.addHandler('change', this.onChangeHandler.bind(this));
@@ -79,6 +88,8 @@ export class RpaRecorder {
       clearTimeout(this.scrollTimer);
       this.scrollTimer = null;
     }
+    window.removeEventListener('pointerdown', this.onPointerDownTarget, true);
+    window.removeEventListener('mousedown', this.onMouseDownTarget, true);
     window.removeEventListener('scroll', this.onScrollHandler, true);
     window.removeEventListener('popstate', this.onPopStateHandler);
     window.removeEventListener('hashchange', this.onPopStateHandler);
@@ -123,13 +134,41 @@ export class RpaRecorder {
   //   document.getElementById('__rpa-recording-style')?.remove();
   // }
 
+  /** 最近一次 pointerdown / mousedown 的目标元素（用于 click 目标异常时的回退） */
+  private lastPointerDownTarget: Element | null = null;
+  private lastMouseDownTarget: Element | null = null;
+
   private addHandler(event: string, handler: EventListener): void {
     document.addEventListener(event, handler, true);
     this.handlers.push({ event, handler });
   }
 
-  private onClickHandler(e: Event): void {
+  private onPointerDownTarget = (e: Event): void => {
+    this.lastPointerDownTarget = e.target as Element;
+  };
+
+  private onMouseDownTarget = (e: Event): void => {
+    this.lastMouseDownTarget = e.target as Element;
+  };
+
+  /**
+   * 解析 click 事件的真实目标。
+   * 页面对 pointerdown 调用 preventDefault 时（如 radix 下拉触发器），浏览器会抑制
+   * mousedown/mouseup 兼容事件，Chromium 会把 click 重定向到 documentElement/body，
+   * 此时回退用最近一次按压（pointerdown → mousedown）的目标。
+   */
+  private resolveClickTarget(e: Event): Element | null {
     const target = e.target as Element;
+    if (!target) return null;
+    if (target === document.documentElement || target === document.body) {
+      const fallback = this.lastPointerDownTarget ?? this.lastMouseDownTarget;
+      if (fallback && fallback.isConnected) return fallback;
+    }
+    return target;
+  }
+
+  private onClickHandler(e: Event): void {
+    const target = this.resolveClickTarget(e);
     if (!target) return;
     // 忽略发生在悬浮条（Shadow DOM）内部的点击：
     // Shadow DOM 事件 retargeting 会使 document 监听器看到 e.target 为宿主元素，
@@ -336,7 +375,13 @@ export class RpaRecorder {
   }
 
   private sendEvent(type: string, el: Element, value?: string): void {
-    const locators = RpaLocatorEngine.generateLocators(el);
+    let locators: RpaLocator[];
+    try {
+      locators = RpaLocatorEngine.generateLocators(el);
+    } catch (err) {
+      console.error(`[RPA-debug:recorder] generateLocators 抛异常 (type=${type})`, el, err);
+      locators = [];
+    }
 
     this.eventCount++;
     this.onEventCounted?.(this.eventCount);

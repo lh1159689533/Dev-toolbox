@@ -41,6 +41,12 @@ export class RpaLocatorEngine {
       }
     }
 
+    // 3.6 列表/树/虚拟滚动场景：优先文本定位（下标定位在虚拟滚动下不稳定）
+    if (this.isInListContext(el)) {
+      const textLocator = this.generateTextLocator(el);
+      if (textLocator) locators.push(textLocator);
+    }
+
     // 4. 父级属性 + 子元素索引定位（多语言友好）
     const ancestorLocator = this.generateAncestorBasedLocator(el);
     if (ancestorLocator) {
@@ -59,10 +65,12 @@ export class RpaLocatorEngine {
       locators.push({ type: RpaLocatorType.XPath, value: xpath, confidence: 0.6 });
     }
 
-    // 7. 文本定位（最低优先级，多语言场景不稳定）
-    const textLocator = this.generateTextLocator(el);
-    if (textLocator) {
-      locators.push({ ...textLocator, confidence: Math.min(textLocator.confidence, 0.5) });
+    // 7. 文本定位（非列表场景兜底，低优先级；列表场景已在 3.6 提前插入）
+    if (!this.isInListContext(el)) {
+      const textLocator = this.generateTextLocator(el);
+      if (textLocator) {
+        locators.push({ ...textLocator, confidence: Math.min(textLocator.confidence, 0.5) });
+      }
     }
 
     return locators;
@@ -391,29 +399,77 @@ export class RpaLocatorEngine {
   }
 
   /**
-   * 基于文本内容生成定位器（最低优先级备选）
+   * 基于文本内容生成定位器（虚拟滚动/列表场景下最稳定，不依赖 DOM 下标）。
+   * 优先用「语义类 + 全文本」组合，其次纯文本；仅在文本全局唯一命中时返回。
    */
   static generateTextLocator(el: Element): RpaLocator | null {
     const fullText = el.textContent?.trim() || '';
 
-    if (fullText.length < 2 || fullText.length > 30) return null;
+    // 纯图标（无文本）不生成文本定位，交由其他定位器处理
+    if (fullText.length < 1 || fullText.length > 100) return null;
 
-    const clickableTags = ['BUTTON', 'A', 'SPAN', 'DIV', 'LI', 'TD', 'LABEL'];
-    const role = el.getAttribute('role');
-    const isClickable =
-      clickableTags.includes(el.tagName) ||
-      role === 'button' ||
-      role === 'menuitem' ||
-      role === 'option' ||
-      role === 'tab' ||
-      role === 'link';
+    const lit = this.xpathStringLiteral(fullText);
 
-    if (!isClickable) return null;
+    // 候选1：语义类限定 + 全文本（更精确，跨虚拟滚动稳定）
+    const anchorClass = this.findTextAnchorClass(el);
+    if (anchorClass) {
+      const xpath = `//*[contains(concat(' ', normalize-space(@class), ' '), ' ${anchorClass} ')][normalize-space(.)=${lit}]`;
+      if (this.countXPath(xpath) === 1) {
+        return { type: RpaLocatorType.XPath, value: xpath, confidence: 0.9 };
+      }
+    }
 
-    const escapedText = fullText.replace(/'/g, "\\'");
+    // 候选2：纯文本全匹配（无稳定类时兜底）
+    const xpath2 = `//*[normalize-space(.)=${lit}]`;
+    if (this.countXPath(xpath2) === 1) {
+      return { type: RpaLocatorType.XPath, value: xpath2, confidence: 0.75 };
+    }
 
+    return null;
+  }
+
+  /** 判断元素是否处于「列表/树/虚拟滚动」上下文（向上存在大量同标签兄弟） */
+  private static isInListContext(el: Element): boolean {
+    let node: Element | null = el;
+    for (let depth = 0; depth < 6 && node; depth++) {
+      const parent: Element | null = node.parentElement;
+      if (parent) {
+        const tag = node.tagName;
+        const sameTagCount = Array.from(parent.children).filter((s: Element) => s.tagName === tag).length;
+        if (sameTagCount >= 5) return true;
+      }
+      node = parent;
+    }
+    return false;
+  }
+
+  /** 查找文本定位的语义锚点类：优先含 label/title/node/item 等关键词的语义类 */
+  private static findTextAnchorClass(el: Element): string | null {
+    const preferred = /(label|title|node|item|row|cell|name|text)/i;
+    let fallback: string | null = null;
+    let node: Element | null = el;
+    for (let depth = 0; depth < 6 && node; depth++) {
+      const cls = this.findSemanticClass(node);
+      if (cls) {
+        if (preferred.test(cls)) return cls;
+        if (!fallback) fallback = cls;
+      }
+      node = node.parentElement;
+    }
+    return fallback;
+  }
+
+  /** 生成 XPath 字符串字面量（正确处理单/双引号） */
+  private static xpathStringLiteral(s: string): string {
+    if (!s.includes("'")) return `'${s}'`;
+    if (!s.includes('"')) return `"${s}"`;
+    const q = "'";
+    return 'concat(' + s.split(q).map((p) => `'${p}'`).join(`, "${q}", `) + ')';
+  }
+
+  /** 统计 XPath 命中数量 */
+  private static countXPath(xpath: string): number {
     try {
-      const xpath = `//*[normalize-space(text())='${escapedText}']`;
       const result = document.evaluate(
         xpath,
         document,
@@ -421,14 +477,10 @@ export class RpaLocatorEngine {
         XPathResult.ORDERED_NODE_SNAPSHOT_TYPE,
         null,
       );
-      if (result.snapshotLength === 1) {
-        return { type: RpaLocatorType.XPath, value: xpath, confidence: 0.5 };
-      }
+      return result.snapshotLength;
     } catch {
-      // XPath 执行失败
+      return 0;
     }
-
-    return null;
   }
 
   /**

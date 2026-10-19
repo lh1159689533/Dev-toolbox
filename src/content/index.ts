@@ -44,13 +44,12 @@ void chrome.runtime
     const data = (
       resp as {
         success?: boolean;
-        data?: { status?: string; eventCount?: number; recordingOrigin?: string };
+        data?: { status?: string; eventCount?: number; recordingOrigin?: string; enforceSameOrigin?: boolean };
       }
     )?.data;
     if (
       data?.status === RpaRecordingStatus.Recording &&
-      data.recordingOrigin &&
-      window.location.origin === data.recordingOrigin
+      (data.enforceSameOrigin === false || (data.recordingOrigin && window.location.origin === data.recordingOrigin))
     ) {
       // 续录时同步全局已录事件数，保持悬浮条计数与实际一致
       const baseCount = data.eventCount ?? 0;

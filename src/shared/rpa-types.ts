@@ -308,6 +308,8 @@ export enum RpaMessageType {
   // Content Script 事件执行
   EXECUTE_COMMAND = 'RPA_EXECUTE_COMMAND',
   EXECUTE_COMMAND_RESULT = 'RPA_EXECUTE_COMMAND_RESULT',
+  // CDP 真实输入（Content Script → Background）：用 chrome.debugger 发送可信鼠标事件以触发 CSS :hover
+  CDP_INPUT = 'RPA_CDP_INPUT',
   // 取消正在执行的命令（停止回放时通知 content script 中止等待元素）
   CANCEL_EXECUTION = 'RPA_CANCEL_EXECUTION',
   // 暂停/恢复正在执行的命令（暂停回放时冻结 content script 的等待元素轮询）

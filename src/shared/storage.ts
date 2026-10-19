@@ -11,6 +11,8 @@ export const STORAGE_KEYS = {
   rpaBarPosition: 'dev-toolbox:rpa:bar-position',
   /** 悬浮条打开过的 origin 列表 */
   rpaBarOpenOrigins: 'dev-toolbox:rpa:bar-open-origins',
+  /** RPA 录制：是否限制同源续录（true=仅同源续录，false=允许跨域续录） */
+  rpaRecordSameOrigin: 'dev-toolbox:rpa:record-same-origin',
   /** 工蜂 Access Token */
   gitToken: 'dev-toolbox:git-token',
   /** TAPD 认证（OAuth Access Token） */

@@ -1,7 +1,9 @@
 import { RpaMessageType, RpaRecordingStatus } from '../shared/rpa-types';
 import type { PageToastKind, RpaCommand, RpaMacro, RpaRecordedEvent, RpaRunState } from '../shared/rpa-types';
 import { createId, createMacroId, getScript, saveScript, updateScript } from '../shared/rpa-storage';
+import { STORAGE_KEYS, storageGet } from '../shared/storage';
 import { RpaPlaybackEngine } from './rpa-playback-engine';
+import { rpaCdpInput } from './rpa-cdp-input';
 
 /** open 命令录制时的默认步骤间隔（ms）：open 后页面可能仍有异步渲染，预留 2s 等待 */
 const OPEN_COMMAND_DEFAULT_DELAY = 2000;
@@ -103,12 +105,15 @@ class BackgroundRpaService {
         if (this.recordingStatus === RpaRecordingStatus.Recording && sender.tab?.id !== undefined) {
           this.recordingTabIds.add(sender.tab.id);
         }
+        // 是否限制同源续录（未配置时默认限制，即仅同源续录）
+        const enforceSameOrigin = (await storageGet<boolean>(STORAGE_KEYS.rpaRecordSameOrigin)) ?? true;
         return {
           success: true,
           data: {
             status: this.recordingStatus,
             eventCount: this.recordedEvents.length,
             recordingOrigin: this.recordingOrigin,
+            enforceSameOrigin,
           },
         };
       }
@@ -140,6 +145,13 @@ class BackgroundRpaService {
 
       case RpaMessageType.GET_RUN_STATE:
         return { success: true, data: this.playbackEngine.getState() };
+
+      case RpaMessageType.CDP_INPUT: {
+        const cdpPayload = message.payload as { action: string; x: number; y: number };
+        const tabId = sender.tab?.id;
+        if (!tabId) return { success: false, error: '未找到来源标签页' };
+        return this.handleCdpInput(tabId, cdpPayload.action, cdpPayload.x, cdpPayload.y);
+      }
 
       // ====== 元素选择 ======
       case RpaMessageType.START_ELEMENT_PICKER: {
@@ -387,6 +399,31 @@ class BackgroundRpaService {
 
     await this.playbackEngine.step(macro, targetTabId);
     return { success: true, data: this.playbackEngine.getState() };
+  }
+
+  /** 处理 CDP 真实输入请求（content script 定位元素后请求 background 用 chrome.debugger 发送可信鼠标事件） */
+  private async handleCdpInput(tabId: number, action: string, x: number, y: number): Promise<unknown> {
+    try {
+      switch (action) {
+        case 'move':
+          await rpaCdpInput.moveTo(tabId, x, y);
+          break;
+        case 'click':
+          await rpaCdpInput.click(tabId, x, y, 'left');
+          break;
+        case 'rightClick':
+          await rpaCdpInput.click(tabId, x, y, 'right');
+          break;
+        case 'doubleClick':
+          await rpaCdpInput.doubleClick(tabId, x, y);
+          break;
+        default:
+          return { success: false, error: `未知 CDP 动作: ${action}` };
+      }
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: (e as Error).message };
+    }
   }
 
   /** 将录制事件转换为 RPA 事件 */

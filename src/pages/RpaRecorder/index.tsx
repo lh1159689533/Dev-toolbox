@@ -153,16 +153,16 @@ export default function RpaRecorder() {
         for (const item of list) {
           if (item && typeof item === 'object') {
             const s = item as RpaMacro;
-            if (typeof s.id === 'string' && Array.isArray(s.commands)) valid.push(s);
+            if (Array.isArray(s.commands)) valid.push(s);
           }
         }
         if (valid.length === 0) {
           setMsg('导入失败：未找到有效脚本');
           return;
         }
-        void importScripts(valid).then(async () => {
+        void importScripts(valid).then(async ({ imported, skipped }) => {
           await reload();
-          setMsg(`已导入 ${valid.length} 个脚本`);
+          setMsg(skipped > 0 ? `已导入 ${imported} 个，跳过 ${skipped} 个` : `已导入 ${imported} 个`);
         });
       } catch {
         setMsg('导入失败：JSON 解析错误');

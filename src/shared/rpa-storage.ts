@@ -23,12 +23,52 @@ export async function saveScript(script: RpaMacro): Promise<void> {
   await chrome.storage.local.set({ [MACROS_KEY]: [script, ...list] });
 }
 
-/** 批量导入脚本（跳过已存在 id，新脚本插入头部） */
-export async function importScripts(scripts: RpaMacro[]): Promise<void> {
+/** 导入结果 */
+export interface ImportResult {
+  /** 实际新导入的数量 */
+  imported: number;
+  /** 跳过数量（重名或名称为空等无效脚本） */
+  skipped: number;
+}
+
+/** 名称归一化：trim + 小写，用于判重 */
+function normalizeName(name?: string): string {
+  return (name ?? '').trim().toLowerCase();
+}
+
+/** 批量导入脚本（按 name 判重，重名跳过；id 缺失或冲突时自动生成唯一 id；新脚本插入头部） */
+export async function importScripts(scripts: RpaMacro[]): Promise<ImportResult> {
   const list = await listScripts();
-  const ids = new Set(list.map((s) => s.id));
-  const toAdd = scripts.filter((s) => !ids.has(s.id));
-  await chrome.storage.local.set({ [MACROS_KEY]: [...toAdd, ...list] });
+  const usedNames = new Set(list.map((s) => normalizeName(s.name)));
+  const usedIds = new Set(list.map((s) => s.id));
+
+  const toAdd: RpaMacro[] = [];
+  let skipped = 0;
+
+  for (const raw of scripts) {
+    const name = normalizeName(raw.name);
+    if (!name) {
+      skipped++;
+      continue;
+    }
+    if (usedNames.has(name)) {
+      skipped++;
+      continue;
+    }
+    let id = raw.id;
+    if (!id || usedIds.has(id)) {
+      id = createMacroId();
+    }
+    usedIds.add(id);
+    usedNames.add(name);
+    toAdd.push({ ...raw, id });
+  }
+
+  if (toAdd.length > 0) {
+    await chrome.storage.local.set({ [MACROS_KEY]: [...toAdd, ...list] });
+  }
+
+  return { imported: toAdd.length, skipped };
 }
 
 /** 重命名脚本 */

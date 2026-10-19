@@ -1,5 +1,6 @@
 import { RpaLocatorEngine } from './locator';
 import { PlaybackCursor } from './playback-cursor';
+import { RpaMessageType } from '../shared/rpa-types';
 
 export interface CommandResult {
   success: boolean;
@@ -129,41 +130,17 @@ export class RpaCommandExecutor {
   private async doClick(target: string): Promise<CommandResult> {
     const el = await this.locateElement(target);
 
-    // let node: Element | null = el;
-    // for (let i = 0; i < 5 && node; i++) {
-    //   node = node.parentElement;
-    // }
-
-    // 完整模拟真实点击的鼠标事件序列（mousedown → mouseup → click）：
-    // 组件库（如 TDesign）基于 mousedown 实现"点击外部关闭下拉面板"，只派发 click 会导致面板无法关闭
+    // 通过 CDP 发送真实点击（mouseMoved → mousePressed → mouseReleased，均为可信事件）：
+    // 合成 dispatchEvent 的 isTrusted=false，部分组件库（如 react-contexify）场景下
+    // 无法触发真实浏览器默认行为，导致点击链路中断
     const rect = el.getBoundingClientRect();
-    const mouseOpts: MouseEventInit = {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      clientX: rect.left + rect.width / 2,
-      clientY: rect.top + rect.height / 2,
-    };
-    el.dispatchEvent(new MouseEvent('mousedown', mouseOpts));
-    // 模拟真实点击默认行为：点击可输入/可选择元素后使其获得焦点
-    if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement) {
-      const dbg = (label: string): void =>
-        console.log(
-          `[RPA-debug:doClick] ${label} | hasFocus=${document.hasFocus()} | active=${
-            (document.activeElement as HTMLElement | null)?.tagName
-          } | isTarget=${document.activeElement === el}`,
-        );
-      dbg('before focus');
-      if (!document.hasFocus()) {
-        window.focus();
-        dbg('after window.focus()');
-      }
-      el.focus();
-      dbg('after focus (sync)');
-      setTimeout(() => dbg('after focus (+200ms)'), 200);
-    }
-    el.dispatchEvent(new MouseEvent('mouseup', mouseOpts));
-    el.dispatchEvent(new MouseEvent('click', mouseOpts));
+    const x = Math.round(rect.left + rect.width / 2);
+    const y = Math.round(rect.top + rect.height / 2);
+    // 【诊断日志】确认实际命中元素，验证定位正确性（修复验证后移除）
+    console.log(
+      `[RPA-debug:doClick] hit <${el.tagName.toLowerCase()} class="${el.className}"> text="${(el.textContent || '').trim().slice(0, 20)}" @(${x},${y})`,
+    );
+    await this.requestCdpInput('click', x, y);
     this.cursor?.tap(this.lastCursorX, this.lastCursorY);
     return { success: true };
   }
@@ -289,8 +266,11 @@ export class RpaCommandExecutor {
 
   private async doMouseOver(target: string): Promise<CommandResult> {
     const el = await this.locateElement(target);
-    el.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
-    el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+    const rect = el.getBoundingClientRect();
+    const x = Math.round(rect.left + rect.width / 2);
+    const y = Math.round(rect.top + rect.height / 2);
+    // 通过 CDP 移动真实指针触发 CSS :hover（合成事件无法触发 :hover）
+    await this.requestCdpInput('move', x, y);
     return { success: true };
   }
 
@@ -515,6 +495,20 @@ export class RpaCommandExecutor {
 
   // ------ 工具方法 ------
 
+  /**
+   * 请求 background 通过 chrome.debugger 发送可信鼠标事件（触发 CSS :hover）。
+   * content script 无法直接调用 chrome.debugger，需经 background 转发。
+   */
+  private async requestCdpInput(action: string, x: number, y: number): Promise<void> {
+    const resp = (await chrome.runtime.sendMessage({
+      type: RpaMessageType.CDP_INPUT,
+      payload: { action, x, y },
+    })) as { success?: boolean; error?: string } | undefined;
+    if (!resp?.success) {
+      throw new Error(resp?.error || 'CDP 输入失败');
+    }
+  }
+
   /** 定位元素（统一入口：定位 → 滚动到视口 → 光标定位到元素） */
   private async locateElement(target: string): Promise<Element> {
     const el = await this.waitAndFind(target);
@@ -572,6 +566,7 @@ export class RpaCommandExecutor {
 
   private async waitAndFind(target: string, waitForVisible = true): Promise<Element> {
     let deadline = Date.now() + this.timeout;
+    let hoverTried = false;
 
     let el: Element | null = null;
     while (Date.now() < deadline) {
@@ -584,11 +579,40 @@ export class RpaCommandExecutor {
         if (this.isVisibleForInteraction(el)) {
           return el;
         }
+
+        // 兜底：元素在 DOM 中但不可见（典型：纯 CSS :hover 控制显隐的按钮），
+        // hover 其最近可见祖先触发 :hover 使其显现（整个等待周期只尝试一次）
+        if (!hoverTried) {
+          hoverTried = true;
+          await this.tryHoverToReveal(el);
+        }
       }
       await new Promise((r) => setTimeout(r, 200));
     }
 
     throw new Error(`未找到目标元素（超时 ${this.timeout}ms）：\n${this.diagnoseFindFailure(target)}`);
+  }
+
+  /**
+   * hover 显现兜底：元素存在于 DOM 但不可见（典型场景：纯 CSS :hover 控制显隐的
+   * 操作按钮，如树节点 hover 才出现的三点按钮）。合成事件无法触发 :hover，
+   * 沿父链找到最近的可见祖先，通过 CDP 移动真实指针到其中心触发 :hover。
+   * 失败静默（如 CDP 被 DevTools 占用），由上层等待/超时流程兜底。
+   */
+  private async tryHoverToReveal(el: Element): Promise<void> {
+    let node: Element | null = el.parentElement;
+    while (node && !this.isVisibleForInteraction(node)) {
+      node = node.parentElement;
+    }
+    if (!node) return;
+    const rect = node.getBoundingClientRect();
+    const x = Math.round(rect.left + rect.width / 2);
+    const y = Math.round(rect.top + rect.height / 2);
+    try {
+      await this.requestCdpInput('move', x, y);
+    } catch {
+      // CDP 不可用时忽略，走原有超时报错流程
+    }
   }
 
   /**

@@ -7,6 +7,7 @@ import {
 } from '../shared/rpa-types';
 import type { RpaCommand, RpaCommandResult, RpaConfig, RpaMacro, RpaRunState } from '../shared/rpa-types';
 import { generateFromRegexLiteral, isRegexLiteral } from '../shared/regex-random';
+import { rpaCdpInput } from './rpa-cdp-input';
 
 /** 可能触发「新开 tab」的事件（执行后需要检测并切换到新 tab） */
 const NEW_TAB_TRIGGER_COMMANDS = new Set(['click', 'clickAt', 'doubleClick', 'rightClick']);
@@ -113,6 +114,8 @@ export class RpaPlaybackEngine {
         this.state.error = (error as Error).message;
       }
     } finally {
+      // 回放结束，解除 CDP attach（缩短「正在调试此浏览器」提示条可见时间）
+      void rpaCdpInput.detachAll().catch(() => {});
       this.state.endTime = Date.now();
       if (this.state.status === RpaRunStatus.Running) {
         this.state.status = RpaRunStatus.Completed;

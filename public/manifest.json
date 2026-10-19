@@ -24,7 +24,8 @@
   "permissions": [
     "storage",
     "tabs",
-    "unlimitedStorage"
+    "unlimitedStorage",
+    "debugger"
   ],
   "host_permissions": [
     "<all_urls>"
