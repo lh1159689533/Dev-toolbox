@@ -26,10 +26,20 @@
   overflow: hidden;
 }
 
+.json-pane.json-input {
+  flex: 4;
+}
+
+.json-pane.json-output {
+  flex: 5;
+}
+
 .json-pane-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
   /* 与右侧含 .btn.small（28px）时的内容高度保持一致，确保左右下边线对齐 */
   min-height: 48px;
   padding: 10px 16px;
@@ -38,6 +48,13 @@
   font-weight: 600;
   color: oklch(30% 0.02 160);
   background: oklch(97% 0.01 160);
+}
+
+/* 「格式化结果」标题行的操作区：展开/折叠 + 配置项 + 复制 */
+.json-pane-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .json-input {
@@ -97,11 +114,28 @@
   padding: 8px 0 16px;
 }
 
-.json-toolbar {
-  display: flex;
-  gap: 8px;
-  padding: 0 16px 8px;
-  border-bottom: 1px solid oklch(94% 0.01 160);
+.json-config {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 12px;
+  color: oklch(50% 0.02 160);
+  cursor: pointer;
+  user-select: none;
+}
+
+.json-config select {
+  font-size: 12px;
+  padding: 2px 4px;
+  border: 1px solid oklch(88% 0.01 160);
+  border-radius: 4px;
+  background: #fff;
+  color: oklch(40% 0.02 160);
+  cursor: pointer;
 }
 
 .json-tree {
@@ -113,8 +147,13 @@
 
 .json-line {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   min-height: 22px;
+}
+
+.json-key {
+  color: #1d4ed8;
+  font-weight: bold;
 }
 
 /* 每级 2 空格的缩进，用等宽字符渲染保证对齐 */
@@ -126,6 +165,33 @@
 /* 键后的冒号+空格，防止行尾空格被折叠 */
 .json-colon {
   white-space: pre;
+}
+
+/* 行号：按逻辑行编号，固定宽度右对齐。
+   宽度 = maxDigits + 1ch（尾部分隔间隙），不加 padding，
+   避免全局 border-box 把内边距算进宽度导致多位数折行 */
+.json-linenum {
+  display: inline-block;
+  flex-shrink: 0;
+  text-align: center;
+  color: oklch(72% 0.01 160);
+  user-select: none;
+}
+
+/* 原始值行：块级内联流，长字符串折行时逗号紧跟最后一个字符 */
+.json-text-line {
+  min-height: 22px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+  word-break: break-all;
+}
+
+/* 关闭「换行」：整行不折行，超出横向滚动 */
+.json-tree-nowrap .json-line,
+.json-tree-nowrap .json-text-line {
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 
 /* 圆形 +/- 折叠图标（展开显示 −，折叠显示 +） */
@@ -149,6 +215,7 @@
   transition:
     background 0.15s,
     color 0.15s;
+  align-self: center;
 }
 
 .json-toggle:hover {
@@ -190,6 +257,46 @@
   font-weight: 600;
   color: oklch(30% 0.02 160);
   background: oklch(97% 0.01 160);
+}
+
+/* 折叠态：只保留图标本身，去掉卡片边框/背景及底部操作条样式 */
+.json-history.json-history-collapsed {
+  flex: 0 0 28px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.json-history.json-history-collapsed .json-history-footer {
+  border-top: none;
+  background: transparent;
+  padding: 0;
+}
+
+/* 底部操作条：承载展开/收起按钮，水平居中 */
+.json-history-footer {
+  flex-shrink: 0;
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+  padding: 6px 0;
+  border-top: 1px solid oklch(90% 0.02 160);
+  background: oklch(97% 0.01 160);
+}
+
+.json-history-toggle {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: none;
+  color: oklch(50% 0.02 160);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.json-history-toggle:hover {
+  background: oklch(93% 0.01 160);
 }
 
 .json-history-list {
