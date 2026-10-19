@@ -30,13 +30,18 @@
   /* ----- 尺寸 ----- */
   --td-radius: 4px;
   --td-control-h: 36px;
-  --td-control-h-sm: 28px;
+  --td-control-h-sm: 26px;
   --td-font-size: 14px;
   --td-font-size-md: 13px;
   --td-font-size-sm: 12px;
 
   /* ----- 焦点环 ----- */
   --td-focus-ring: 0 0 0 2px oklch(50% 0.07 160 / 40%);
+
+  /* ----- 滚动条（全站统一，与 Select 下拉框一致） ----- */
+  --td-scrollbar-size: 6px;
+  --td-scrollbar-thumb: oklch(80% 0.01 160 / 70%);
+  --td-scrollbar-thumb-hover: oklch(68% 0.01 160 / 90%);
 
   /* ----- 下拉框箭头（统一图标） ----- */
   --td-select-arrow: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%234d7a68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");

@@ -23,6 +23,7 @@ interface Settings {
   tapdAuth: string;
   defaultQuery: DefaultQuery;
   jsonHistoryLimit: number;
+  rpaRecordSameOrigin: boolean;
 }
 
 const EMPTY_QUERY: DefaultQuery = { projectPath: '', branch: '', author: '', workspaceId: '' };
@@ -31,7 +32,24 @@ const EMPTY_SETTINGS: Settings = {
   tapdAuth: '',
   defaultQuery: EMPTY_QUERY,
   jsonHistoryLimit: DEFAULT_HISTORY_LIMIT,
+  rpaRecordSameOrigin: true,
 };
+
+function IncreaseIcon() {
+  return (
+    <svg fill="none" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">
+      <path stroke="currentColor" d="M17.5 14.5L12 9L6.5 14.5" strokeLinecap="square" strokeWidth="2" />
+    </svg>
+  );
+}
+
+function DecreaseIcon() {
+  return (
+    <svg fill="none" viewBox="0 0 24 24" width="1em" height="1em" aria-hidden="true">
+      <path stroke="currentColor" d="M17.5 9.5L12 15L6.5 9.5" strokeLinecap="square" strokeWidth="2" />
+    </svg>
+  );
+}
 
 interface SettingsFormProps {
   /** 是否显示「JSON 格式化」历史记录条数配置（仅主应用设置抽屉需要） */
@@ -46,7 +64,12 @@ export default function SettingsForm({ showJsonHistory = false }: SettingsFormPr
 
   useEffect(() => {
     let cancelled = false;
-    const keys: string[] = [STORAGE_KEYS.gitToken, STORAGE_KEYS.tapdAuth, STORAGE_KEYS.defaultQuery];
+    const keys: string[] = [
+      STORAGE_KEYS.gitToken,
+      STORAGE_KEYS.tapdAuth,
+      STORAGE_KEYS.defaultQuery,
+      STORAGE_KEYS.rpaRecordSameOrigin,
+    ];
     if (showJsonHistory) keys.push(STORAGE_KEYS.jsonFormatterHistoryLimit);
 
     storageGetMany(keys).then((res) => {
@@ -60,6 +83,7 @@ export default function SettingsForm({ showJsonHistory = false }: SettingsFormPr
           typeof rawLimit === 'number' && Number.isFinite(rawLimit)
             ? clampHistoryLimit(rawLimit)
             : DEFAULT_HISTORY_LIMIT,
+        rpaRecordSameOrigin: (res[STORAGE_KEYS.rpaRecordSameOrigin] as boolean) ?? true,
       });
       setLoaded(true);
     });
@@ -84,12 +108,26 @@ export default function SettingsForm({ showJsonHistory = false }: SettingsFormPr
     setSaved(false);
   };
 
+  const updateRpaSameOrigin = (value: boolean) => {
+    setSettings((s) => ({ ...s, rpaRecordSameOrigin: value }));
+    setSaved(false);
+  };
+
+  const stepLimit = (delta: number) => {
+    setSettings((s) => {
+      const base = Number.isFinite(s.jsonHistoryLimit) ? s.jsonHistoryLimit : DEFAULT_HISTORY_LIMIT;
+      return { ...s, jsonHistoryLimit: clampHistoryLimit(base + delta) };
+    });
+    setSaved(false);
+  };
+
   const handleSave = async () => {
     const limit = clampHistoryLimit(settings.jsonHistoryLimit);
     const values: Record<string, unknown> = {
       [STORAGE_KEYS.gitToken]: settings.gitToken.trim(),
       [STORAGE_KEYS.tapdAuth]: settings.tapdAuth.trim(),
       [STORAGE_KEYS.defaultQuery]: settings.defaultQuery,
+      [STORAGE_KEYS.rpaRecordSameOrigin]: settings.rpaRecordSameOrigin,
     };
     if (showJsonHistory) {
       values[STORAGE_KEYS.jsonFormatterHistoryLimit] = limit;
@@ -174,20 +212,63 @@ export default function SettingsForm({ showJsonHistory = false }: SettingsFormPr
           <p className="hint">配置「JSON 格式化」工具的历史记录保留条数。</p>
           <label className="field">
             <span>历史记录条数上限</span>
-            <Input
-              type="number"
-              min={MIN_HISTORY_LIMIT}
-              max={MAX_HISTORY_LIMIT}
-              value={Number.isFinite(settings.jsonHistoryLimit) ? settings.jsonHistoryLimit : ''}
-              onChange={(e) => updateLimit(e.target.value)}
-              placeholder={`${MIN_HISTORY_LIMIT} ~ ${MAX_HISTORY_LIMIT}`}
-            />
+            <div className="sf-limit-wrap">
+              <Input
+                type="number"
+                min={MIN_HISTORY_LIMIT}
+                max={MAX_HISTORY_LIMIT}
+                step={1}
+                className="sf-limit"
+                value={Number.isFinite(settings.jsonHistoryLimit) ? settings.jsonHistoryLimit : ''}
+                onChange={(e) => updateLimit(e.target.value)}
+                placeholder={`${MIN_HISTORY_LIMIT} ~ ${MAX_HISTORY_LIMIT}`}
+              />
+              <span className="sf-limit-stepper">
+                <button
+                  type="button"
+                  className="sf-limit-btn increase"
+                  title="增加 1 条"
+                  onClick={() => stepLimit(1)}
+                >
+                  <IncreaseIcon />
+                </button>
+                <button
+                  type="button"
+                  className={`sf-limit-btn decrease ${
+                    (Number.isFinite(settings.jsonHistoryLimit) ? settings.jsonHistoryLimit : DEFAULT_HISTORY_LIMIT) <=
+                    MIN_HISTORY_LIMIT
+                      ? 'disabled'
+                      : ''
+                  }`}
+                  title="减少 1 条"
+                  onClick={() => stepLimit(-1)}
+                >
+                  <DecreaseIcon />
+                </button>
+              </span>
+            </div>
           </label>
           <p className="hint">
             范围 {MIN_HISTORY_LIMIT} ~ {MAX_HISTORY_LIMIT}，默认 {DEFAULT_HISTORY_LIMIT} 条。
           </p>
         </section>
       )}
+
+      <section className="form-section">
+        <h2>录制回放</h2>
+        <p className="hint">控制「录制回放」工具在录制时的行为。</p>
+        <label className="field-checkbox">
+          <input
+            type="checkbox"
+            checked={settings.rpaRecordSameOrigin}
+            onChange={(e) => updateRpaSameOrigin(e.target.checked)}
+          />
+          <span>录制时限制同源页面</span>
+        </label>
+        <p className="hint">
+          开启后，录制过程中新开的标签页只有与起始页同源才会自动继续录制；关闭后，跨域页面（如跳转的支付页）也会自动续录。
+        </p>
+      </section>
 
       <footer className="form-footer">
         <Button variant="primary" onClick={handleSave}>

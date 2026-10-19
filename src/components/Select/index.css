@@ -86,9 +86,6 @@ input.td-select.open {
   border: 1px solid var(--td-border);
   border-radius: var(--td-radius);
   box-shadow: 0 8px 24px oklch(20% 0.02 160 / 15%);
-  /* 细圆角滚动条（Firefox） */
-  scrollbar-width: thin;
-  scrollbar-color: oklch(80% 0.01 160 / 70%) transparent;
 }
 
 /* 进出场动画：in=淡入，out=淡出（动画结束后由 onAnimationEnd 卸载） */
@@ -121,23 +118,6 @@ input.td-select.open {
     opacity: 0;
     transform: translateY(-4px);
   }
-}
-
-.td-select-dropdown::-webkit-scrollbar {
-  width: 6px;
-}
-
-.td-select-dropdown::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.td-select-dropdown::-webkit-scrollbar-thumb {
-  background: oklch(80% 0.01 160 / 70%);
-  border-radius: 3px;
-}
-
-.td-select-dropdown::-webkit-scrollbar-thumb:hover {
-  background: oklch(68% 0.01 160 / 90%);
 }
 
 .td-select-option {

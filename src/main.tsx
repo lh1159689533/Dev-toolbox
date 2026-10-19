@@ -9,6 +9,7 @@ import JsonDupKey from './pages/JsonDupKey';
 import RpaRecorder from './pages/RpaRecorder';
 import SettingsDrawer from './components/SettingsDrawer';
 import './index.css';
+import './styles/scrollbar.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <HashRouter>

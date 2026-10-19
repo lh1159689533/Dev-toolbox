@@ -50,8 +50,96 @@
   font-size: 13px;
 }
 
+/* 录制回放：同源限制开关 */
+.settings-form .field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.settings-form .field-checkbox input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--td-primary);
+}
+
+.settings-form .field-checkbox span {
+  font-weight: 500;
+  font-size: 13px;
+}
+
 .settings-form .settings-form-loading {
   color: var(--td-text-muted);
   padding: 20px 0;
   text-align: center;
+}
+
+/* 历史条数上限：数字输入框自定义步进按钮（对齐 devtools 样式，输入框保持全宽） */
+.settings-form .sf-limit-wrap {
+  position: relative;
+  display: flex;
+}
+
+.settings-form .sf-limit-wrap .sf-limit {
+  width: 100%;
+  padding-right: 32px;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+/* 隐藏 number 输入框原生加减按钮（spinner），改用自定义步进按钮 */
+.settings-form .sf-limit::-webkit-outer-spin-button,
+.settings-form .sf-limit::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.settings-form .sf-limit-stepper {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  flex-direction: column;
+}
+
+.settings-form .sf-limit-wrap:hover .sf-limit-stepper {
+  display: flex;
+}
+
+.settings-form .sf-limit-btn {
+  border: none;
+  background: #cfeddc;
+  padding: 0;
+  font-size: 10px;
+  line-height: 9px;
+  color: var(--td-text-muted);
+  cursor: pointer;
+  width: 28px;
+  height: 16px;
+  margin-right: 1px;
+}
+
+.settings-form .sf-limit-btn.increase {
+  border-top-right-radius: 4px;
+  margin-bottom: 0.5px;
+}
+
+.settings-form .sf-limit-btn.decrease {
+  border-bottom-right-radius: 4px;
+  margin-top: 0.5px;
+}
+
+.settings-form .sf-limit-btn.disabled:hover {
+  cursor: not-allowed;
+  background: oklch(92% 0.04 160);
+  color: oklch(70% 0.03 160);
+}
+
+.settings-form .sf-limit-btn:not(.disabled):hover {
+  color: #fff;
+  background-color: var(--td-primary);
 }
