@@ -210,7 +210,7 @@ export default function JsonFormatter() {
             <span>输入</span>
           </div>
           <textarea
-            className="json-input"
+            className="json-input-text"
             placeholder='在此粘贴JSON，例如 {"name":"Alice","age":30}'
             value={input}
             onChange={(e) => setInput(e.target.value)}

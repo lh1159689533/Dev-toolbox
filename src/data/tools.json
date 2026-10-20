@@ -19,7 +19,7 @@
   {
     "id": "json-formatter",
     "name": "JSON 格式化",
-    "description": "JSON字符串格式化为对象，方便查看",
+    "description": "JSON字符串格式化",
     "category": "开发协作",
     "keywords": [
       "json",

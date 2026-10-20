@@ -240,7 +240,7 @@
 }
 
 .rpa-view-btn.active {
-  background: var(--td-primary);
+  background: var(--dev-toolbox-primary);
   color: #fff;
 }
 

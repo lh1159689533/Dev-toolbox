@@ -8,6 +8,6 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 }
 
 export default function Textarea({ size = 'default', className, ...rest }: TextareaProps) {
-  const cls = ['td-textarea', size === 'small' ? 'small' : '', className].filter(Boolean).join(' ');
+  const cls = ['dt-textarea', size === 'small' ? 'small' : '', className].filter(Boolean).join(' ');
   return <textarea className={cls} {...rest} />;
 }

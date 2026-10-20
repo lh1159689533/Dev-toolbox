@@ -1,21 +1,21 @@
 /* ==========================================================================
  * 全站统一滚动条（细圆角、绿色系，与 Select 下拉框一致）
  * 由主应用（main.tsx）与 DevTools 面板（devtools/panel.tsx）分别引入，
- * 依赖 tokens.css 中的 --td-scrollbar-* 变量。
+ * 依赖 tokens.css 中的 --dev-toolbox-scrollbar-* 变量。
  * ========================================================================== */
 
 /* Firefox：scrollbar-width / scrollbar-color 均可继承，挂在 html 上即可覆盖所有元素 */
 @supports not selector(::-webkit-scrollbar) {
   html {
     scrollbar-width: thin;
-    scrollbar-color: var(--td-scrollbar-thumb) transparent;
+    scrollbar-color: var(--dev-toolbox-scrollbar-thumb) transparent;
   }
 }
 
 /* WebKit / Blink */
 *::-webkit-scrollbar {
-  width: var(--td-scrollbar-size);
-  height: var(--td-scrollbar-size);
+  width: var(--dev-toolbox-scrollbar-size);
+  height: var(--dev-toolbox-scrollbar-size);
 }
 
 *::-webkit-scrollbar-track {
@@ -23,12 +23,12 @@
 }
 
 *::-webkit-scrollbar-thumb {
-  background: var(--td-scrollbar-thumb);
+  background: var(--dev-toolbox-scrollbar-thumb);
   border: 0px solid transparent;
   background-clip: content-box;
   border-radius: 11px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-  background: var(--td-scrollbar-thumb-hover);
+  background: var(--dev-toolbox-scrollbar-thumb-hover);
 }

@@ -1,23 +1,23 @@
-.td-textarea {
+.dt-textarea {
   width: 100%;
   min-height: 150px;
   padding: 10px 12px;
-  border: 1px solid var(--td-border);
-  border-radius: var(--td-radius);
+  border: 1px solid var(--dev-toolbox-border);
+  border-radius: var(--dev-toolbox-radius);
   outline: none;
   resize: vertical;
   font-family: 'SF Mono', Menlo, Consolas, monospace;
-  font-size: var(--td-font-size-md);
+  font-size: var(--dev-toolbox-font-size-md);
   line-height: 1.7;
-  color: var(--td-text);
-  background: var(--td-bg);
+  color: var(--dev-toolbox-text);
+  background: var(--dev-toolbox-bg-muted);
 }
 
-.td-textarea:focus {
-  border-color: var(--td-primary);
-  box-shadow: var(--td-focus-ring);
+.dt-textarea:focus {
+  border-color: var(--dev-toolbox-primary);
+  box-shadow: var(--dev-toolbox-focus-ring);
 }
 
-.td-textarea.small {
+.dt-textarea.small {
   font-size: 12px;
 }

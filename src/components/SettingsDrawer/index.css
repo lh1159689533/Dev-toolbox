@@ -6,7 +6,7 @@
   height: 48px;
   border: none;
   border-radius: 50%;
-  background: var(--td-primary);
+  background: var(--dev-toolbox-primary);
   color: #fff;
   cursor: pointer;
   display: flex;
@@ -18,7 +18,7 @@
 }
 
 .settings-fab:hover {
-  background: var(--td-primary-hover);
+  background: var(--dev-toolbox-primary-hover);
   transform: translateY(-2px);
 }
 

@@ -57,7 +57,7 @@
   gap: 10px;
 }
 
-.json-input {
+.json-input-text {
   flex: 1;
   min-height: 0;
   resize: none;
@@ -317,6 +317,8 @@
 }
 
 .json-history-item {
+  /* 防止被纵向 flex 压缩：压缩会让 overflow-y: auto 永远不触发 */
+  flex-shrink: 0;
   display: flex;
   align-items: stretch;
   border: 1px solid oklch(92% 0.01 160);

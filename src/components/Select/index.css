@@ -1,21 +1,21 @@
-.td-select-root {
+.dt-select-root {
   position: relative;
 }
 
 /* 触发器：input（可搜索）与 button（普通）共用同一套外观 */
-.td-select {
+.dt-select {
   width: 100%;
-  height: var(--td-control-h);
+  height: var(--dev-toolbox-control-h);
   padding: 0 30px 0 10px;
-  border: 1px solid var(--td-border);
-  border-radius: var(--td-radius);
+  border: 1px solid var(--dev-toolbox-border);
+  border-radius: var(--dev-toolbox-radius);
   outline: none;
   font-family: inherit;
-  font-size: var(--td-font-size);
-  color: var(--td-text);
-  background-color: var(--td-bg);
+  font-size: var(--dev-toolbox-font-size);
+  color: var(--dev-toolbox-text);
+  background-color: var(--dev-toolbox-bg-muted);
   /* 箭头常驻（展开/收起都显示） */
-  background-image: var(--td-select-arrow);
+  background-image: var(--dev-toolbox-select-arrow);
   background-repeat: no-repeat;
   background-position: right 10px center;
   appearance: none;
@@ -24,37 +24,37 @@
   text-align: left;
 }
 
-button.td-select {
+button.dt-select {
   display: flex;
   align-items: center;
 }
 
-.td-select:focus {
-  border-color: var(--td-primary);
-  box-shadow: var(--td-focus-ring);
+.dt-select:focus {
+  border-color: var(--dev-toolbox-primary);
+  box-shadow: var(--dev-toolbox-focus-ring);
 }
 
-.td-select:hover:not(:disabled) {
-  border-color: var(--td-primary);
+.dt-select:hover:not(:disabled) {
+  border-color: var(--dev-toolbox-primary);
 }
 
-.td-select:disabled {
-  color: var(--td-text-muted);
-  background-color: var(--td-bg-muted);
+.dt-select:disabled {
+  color: var(--dev-toolbox-text-muted);
+  background-color: var(--dev-toolbox-bg-muted);
   cursor: not-allowed;
 }
 
 /* 可搜索态展开后进入文本编辑 */
-input.td-select.open {
+input.dt-select.open {
   cursor: text;
 }
 
 /* 展开时箭头朝上 */
-.td-select.open {
-  background-image: var(--td-select-arrow-up);
+.dt-select.open {
+  background-image: var(--dev-toolbox-select-arrow-up);
 }
 
-.td-select-label {
+.dt-select-label {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -62,19 +62,19 @@ input.td-select.open {
   white-space: nowrap;
 }
 
-.td-select-label.placeholder {
-  color: var(--td-text-muted);
+.dt-select-label.placeholder {
+  color: var(--dev-toolbox-text-muted);
 }
 
-.td-select.small {
-  height: var(--td-control-h-sm);
+.dt-select.small {
+  height: var(--dev-toolbox-control-h-sm);
   padding: 0 24px 0 8px;
   font-size: 12px;
   background-position: right 8px center;
 }
 
 /* ===== 选项面板 ===== */
-.td-select-dropdown {
+.dt-select-dropdown {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
@@ -82,23 +82,23 @@ input.td-select.open {
   z-index: 50;
   max-height: 260px;
   overflow-y: auto;
-  background: var(--td-bg);
-  border: 1px solid var(--td-border);
-  border-radius: var(--td-radius);
+  background: var(--dev-toolbox-bg);
+  border: 1px solid var(--dev-toolbox-border);
+  border-radius: var(--dev-toolbox-radius);
   box-shadow: 0 8px 24px oklch(20% 0.02 160 / 15%);
 }
 
 /* 进出场动画：in=淡入，out=淡出（动画结束后由 onAnimationEnd 卸载） */
-.td-select-dropdown.in {
-  animation: td-select-in 0.16s cubic-bezier(0.2, 0.8, 0.4, 1) both;
+.dt-select-dropdown.in {
+  animation: dt-select-in 0.16s cubic-bezier(0.2, 0.8, 0.4, 1) both;
 }
 
-.td-select-dropdown.out {
-  animation: td-select-out 0.12s ease both;
+.dt-select-dropdown.out {
+  animation: dt-select-out 0.12s ease both;
   pointer-events: none;
 }
 
-@keyframes td-select-in {
+@keyframes dt-select-in {
   from {
     opacity: 0;
     transform: translateY(-4px);
@@ -109,7 +109,7 @@ input.td-select.open {
   }
 }
 
-@keyframes td-select-out {
+@keyframes dt-select-out {
   from {
     opacity: 1;
     transform: translateY(0);
@@ -120,31 +120,31 @@ input.td-select.open {
   }
 }
 
-.td-select-option {
+.dt-select-option {
   padding: 8px 12px;
-  font-size: var(--td-font-size-sm);
-  color: var(--td-text);
+  font-size: var(--dev-toolbox-font-size-sm);
+  color: var(--dev-toolbox-text);
   cursor: pointer;
   word-break: break-all;
 }
 
-.td-select-option.active {
+.dt-select-option.active {
   background: oklch(94% 0.015 160);
 }
 
-.td-select-option.selected {
-  background: var(--td-primary-soft);
+.dt-select-option.selected {
+  background: var(--dev-toolbox-primary-soft);
   color: oklch(48% 0.07 160);
   font-weight: 500;
 }
 
-.td-select-option.hint {
-  color: var(--td-text-muted);
-  font-size: var(--td-font-size-md);
+.dt-select-option.hint {
+  color: var(--dev-toolbox-text-muted);
+  font-size: var(--dev-toolbox-font-size-md);
 }
 
-.td-select-option.empty {
-  color: var(--td-text-muted);
+.dt-select-option.empty {
+  color: var(--dev-toolbox-text-muted);
   text-align: center;
   cursor: default;
 }

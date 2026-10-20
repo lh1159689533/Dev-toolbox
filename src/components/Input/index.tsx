@@ -10,7 +10,7 @@ interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>
 }
 
 export default function Input({ invalid, size = 'default', className, ...rest }: InputProps) {
-  const cls = ['td-input', size === 'small' ? 'small' : '', invalid ? 'invalid' : '', className]
+  const cls = ['dt-input', size === 'small' ? 'small' : '', invalid ? 'invalid' : '', className]
     .filter(Boolean)
     .join(' ');
   return <input className={cls} {...rest} />;

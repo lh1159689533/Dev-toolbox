@@ -5,46 +5,46 @@
  * ========================================================================== */
 :root {
   /* ----- 主色（绿色系） ----- */
-  --td-primary: oklch(50% 0.07 160);
-  --td-primary-hover: oklch(45% 0.07 160);
-  --td-primary-soft: oklch(92% 0.04 160);
-  --td-primary-faint: oklch(96% 0.01 160);
+  --dev-toolbox-primary: oklch(50% 0.07 160);
+  --dev-toolbox-primary-hover: oklch(45% 0.07 160);
+  --dev-toolbox-primary-soft: oklch(92% 0.04 160);
+  --dev-toolbox-primary-faint: oklch(96% 0.01 160);
 
   /* ----- 危险色 ----- */
-  --td-danger: oklch(55% 0.16 25);
-  --td-danger-hover: oklch(50% 0.18 25);
-  --td-danger-soft: oklch(96% 0.02 25);
+  --dev-toolbox-danger: oklch(55% 0.16 25);
+  --dev-toolbox-danger-hover: oklch(50% 0.18 25);
+  --dev-toolbox-danger-soft: oklch(96% 0.02 25);
 
   /* ----- 文本 ----- */
-  --td-text: oklch(30% 0.02 160);
-  --td-text-secondary: oklch(45% 0.02 160);
-  --td-text-muted: oklch(55% 0.02 160);
-  --td-text-disabled: oklch(70% 0.03 160);
+  --dev-toolbox-text: oklch(30% 0.02 160);
+  --dev-toolbox-text-secondary: oklch(45% 0.02 160);
+  --dev-toolbox-text-muted: oklch(55% 0.02 160);
+  --dev-toolbox-text-disabled: oklch(70% 0.03 160);
 
   /* ----- 边框 / 背景 ----- */
-  --td-border: oklch(88% 0.02 160);
-  --td-border-faint: oklch(94% 0.01 160);
-  --td-bg: #ffffff;
-  --td-bg-muted: oklch(97% 0.01 160);
+  --dev-toolbox-border: oklch(88% 0.02 160);
+  --dev-toolbox-border-faint: oklch(94% 0.01 160);
+  --dev-toolbox-bg: #ffffff;
+  --dev-toolbox-bg-muted: oklch(97% 0.01 160);
 
   /* ----- 尺寸 ----- */
-  --td-radius: 4px;
-  --td-control-h: 36px;
-  --td-control-h-sm: 26px;
-  --td-font-size: 14px;
-  --td-font-size-md: 13px;
-  --td-font-size-sm: 12px;
+  --dev-toolbox-radius: 4px;
+  --dev-toolbox-control-h: 36px;
+  --dev-toolbox-control-h-sm: 26px;
+  --dev-toolbox-font-size: 14px;
+  --dev-toolbox-font-size-md: 13px;
+  --dev-toolbox-font-size-sm: 12px;
 
   /* ----- 焦点环 ----- */
-  --td-focus-ring: 0 0 0 2px oklch(50% 0.07 160 / 40%);
+  --dev-toolbox-focus-ring: 0 0 0 2px oklch(50% 0.07 160 / 40%);
 
   /* ----- 滚动条（全站统一，与 Select 下拉框一致） ----- */
-  --td-scrollbar-size: 6px;
-  --td-scrollbar-thumb: oklch(80% 0.01 160 / 70%);
-  --td-scrollbar-thumb-hover: oklch(68% 0.01 160 / 90%);
+  --dev-toolbox-scrollbar-size: 6px;
+  --dev-toolbox-scrollbar-thumb: oklch(80% 0.01 160 / 70%);
+  --dev-toolbox-scrollbar-thumb-hover: oklch(68% 0.01 160 / 90%);
 
   /* ----- 下拉框箭头（统一图标） ----- */
-  --td-select-arrow: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%234d7a68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");
+  --dev-toolbox-select-arrow: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%234d7a68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M2.5 4.5 6 8l3.5-3.5'/%3E%3C/svg%3E");
   /* 展开态箭头（朝上） */
-  --td-select-arrow-up: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%234d7a68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M2.5 7.5 6 4l3.5 3.5'/%3E%3C/svg%3E");
+  --dev-toolbox-select-arrow-up: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%234d7a68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' d='M2.5 7.5 6 4l3.5 3.5'/%3E%3C/svg%3E");
 }

@@ -147,10 +147,10 @@ export default function Select({
     }
   };
 
-  const triggerCls = ['td-select', size === 'small' ? 'small' : '', open ? 'open' : '']
+  const triggerCls = ['dt-select', size === 'small' ? 'small' : '', open ? 'open' : '']
     .filter(Boolean)
     .join(' ');
-  const rootCls = ['td-select-root', className].filter(Boolean).join(' ');
+  const rootCls = ['dt-select-root', className].filter(Boolean).join(' ');
 
   return (
     <div className={rootCls} ref={rootRef}>
@@ -191,13 +191,13 @@ export default function Select({
           onClick={handleTriggerClick}
           onKeyDown={handleKeyDown}
         >
-          <span className={`td-select-label${showPlaceholder ? ' placeholder' : ''}`}>{displayText}</span>
+          <span className={`dt-select-label${showPlaceholder ? ' placeholder' : ''}`}>{displayText}</span>
         </button>
       )}
 
       {renderPanel && (
         <div
-          className={`td-select-dropdown ${phase}`}
+          className={`dt-select-dropdown ${phase}`}
           ref={listRef}
           role="listbox"
           onAnimationEnd={(e) => {
@@ -206,14 +206,14 @@ export default function Select({
           }}
         >
           {filtered.length === 0 ? (
-            <div className="td-select-option empty">{emptyText}</div>
+            <div className="dt-select-option empty">{emptyText}</div>
           ) : (
             filtered.map((o, i) => (
               <div
                 key={o.value || `__option_${i}`}
                 role="option"
                 aria-selected={o.value === value}
-                className={['td-select-option', i === activeIndex ? 'active' : '', o.value === value ? 'selected' : '', o.hint ? 'hint' : '']
+                className={['dt-select-option', i === activeIndex ? 'active' : '', o.value === value ? 'selected' : '', o.hint ? 'hint' : '']
                   .filter(Boolean)
                   .join(' ')}
                 // mousedown + preventDefault：避免触发器先失焦导致面板关闭
@@ -227,7 +227,7 @@ export default function Select({
               </div>
             ))
           )}
-          {footer && <div className="td-select-option empty">{footer}</div>}
+          {footer && <div className="dt-select-option empty">{footer}</div>}
         </div>
       )}
     </div>
