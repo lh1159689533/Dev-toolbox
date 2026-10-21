@@ -2,108 +2,176 @@
   min-height: 100vh;
 }
 
+/* ---------- 页头 ---------- */
 .home-header {
-  padding: 32px 24px 20px;
+  padding: 40px 24px 28px;
   border-bottom: 1px solid oklch(90% 0.02 160);
   background: oklch(97% 0.01 160);
 }
 
+.home-header-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 .home-header h1 {
-  font-size: 24px;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
   color: oklch(25% 0.02 160);
   margin: 0;
 }
 
 .home-subtitle {
+  margin: 10px 0 0;
+  max-width: 640px;
+  font-size: 14px;
+  line-height: 1.6;
   color: oklch(55% 0.02 160);
-  margin-top: 8px;
-  margin-bottom: 0;
 }
 
-.home-body {
-  display: flex;
-  gap: 24px;
+/* ---------- 主体容器 ---------- */
+.home-content {
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px;
-  align-items: flex-start;
 }
 
-.home-sidebar {
-  flex-shrink: 0;
-  width: 200px;
-}
-
-.home-search input {
-  width: 100%;
-}
-
-.home-categories {
-  margin-top: 16px;
+/* ---------- 工具条：搜索 + 视图切换 ---------- */
+.home-toolbar {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-search {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.home-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  color: oklch(60% 0.02 160);
+  pointer-events: none;
+}
+
+.home-search .dt-input {
+  width: 100%;
+  height: 40px;
+  padding-left: 36px;
+  border-radius: 20px;
+}
+
+.home-view-toggle {
+  display: flex;
+  flex-shrink: 0;
+  border: 1px solid oklch(88% 0.02 160);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.home-view-btn {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: none;
+  background: #fff;
+  color: oklch(60% 0.02 160);
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.home-view-btn + .home-view-btn {
+  border-left: 1px solid oklch(88% 0.02 160);
+}
+
+.home-view-btn:hover {
+  background: oklch(96% 0.015 160);
+  color: oklch(45% 0.05 160);
+}
+
+.home-view-btn.active {
+  background: oklch(92% 0.04 160);
+  color: oklch(45% 0.07 160);
+}
+
+/* ---------- 分类 pills ---------- */
+.home-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
 }
 
 .home-cat {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 6px;
-  background: none;
-  color: oklch(40% 0.02 160);
-  font-size: 14px;
-  text-align: left;
-  transition: background 0.15s;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid oklch(90% 0.02 160);
+  border-radius: 999px;
+  background: #fff;
+  color: oklch(45% 0.02 160);
+  font-size: 13px;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
 }
 
 .home-cat:hover {
-  background: oklch(94% 0.015 160);
+  border-color: oklch(70% 0.05 160);
+  background: oklch(96% 0.015 160);
 }
 
 .home-cat.active {
-  background: oklch(92% 0.04 160);
-  color: oklch(45% 0.07 160);
+  border-color: oklch(50% 0.07 160);
+  background: oklch(50% 0.07 160);
+  color: #fff;
   font-weight: 600;
 }
 
 .home-count {
   font-size: 12px;
   color: oklch(60% 0.02 160);
-  background: oklch(94% 0.015 160);
-  border-radius: 10px;
-  padding: 1px 8px;
 }
 
 .home-cat.active .home-count {
-  background: oklch(50% 0.07 160);
-  color: #fff;
+  color: oklch(100% 0 0 / 80%);
 }
 
-.home-main {
-  flex: 1;
-  min-width: 0;
-}
-
-.home-grid {
+/* ---------- 卡片容器 ---------- */
+.home-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 16px;
+  margin-top: 24px;
 }
 
+.home-cards.grid {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.home-cards.list {
+  grid-template-columns: 1fr;
+}
+
+/* ---------- 工具卡片：网格模式 ---------- */
 .tool-card {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 8px;
-  padding: 20px;
-  border: 1px solid oklch(92% 0.04 160);
-  border-radius: 8px;
-  background: oklch(92% 0.04 160);
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid oklch(92% 0.02 160);
+  border-radius: 10px;
+  background: #fff;
   text-align: left;
   transition:
     border-color 0.15s,
@@ -111,49 +179,177 @@
     transform 0.15s;
 }
 
-.tool-external {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  font-size: 14px;
-  line-height: 1;
-  color: oklch(55% 0.02 160);
-}
-
 .tool-card:hover {
   border-color: oklch(50% 0.07 160);
-  box-shadow: 0 6px 16px oklch(20% 0.02 160 / 10%);
+  box-shadow: 0 6px 16px oklch(20% 0.02 160 / 8%);
   transform: translateY(-2px);
 }
 
-.tool-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.tool-icon-box {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: oklch(96% 0.02 160);
 }
 
 .tool-icon {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
   display: block;
 }
 
+/* 图标 + 标题：标题在 icon 右侧并与其垂直居中 */
+.tool-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  width: 100%;
+}
+
+.tool-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* 分类展示位：网格模式显示在描述上方（main），列表模式显示在标题下方（sub） */
+.tool-category-sub {
+  display: none;
+}
+
+.tool-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+}
+
+.tool-category {
+  font-size: 12px;
+  color: oklch(50% 0.07 160);
+}
+
 .tool-name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
-  color: oklch(45% 0.07 160);
+  color: oklch(35% 0.04 160);
 }
 
 .tool-desc {
   font-size: 13px;
-  color: oklch(55% 0.02 160);
   line-height: 1.5;
+  color: oklch(55% 0.02 160);
 }
 
+.home-cards.grid .tool-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tool-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.tool-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: oklch(96% 0.015 160);
+  color: oklch(50% 0.04 160);
+  font-size: 12px;
+}
+
+.tool-trail {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  color: oklch(65% 0.02 160);
+}
+
+.tool-card:hover .tool-trail {
+  color: oklch(50% 0.07 160);
+}
+
+/* ---------- 工具卡片：列表模式 ---------- */
+.home-cards.list .tool-card {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.home-cards.list .tool-card:hover {
+  transform: none;
+}
+
+/* 列表模式：head 拆开，图标、标题、描述水平排布且垂直居中 */
+.home-cards.list .tool-head {
+  display: contents;
+}
+
+.home-cards.list .tool-name {
+  white-space: nowrap;
+}
+
+/* 列表模式：分类移到标题下方 */
+.home-cards.list .tool-category-main {
+  display: none;
+}
+
+.home-cards.list .tool-category-sub {
+  display: block;
+}
+
+.home-cards.list .tool-body {
+  flex: 1;
+}
+
+.home-cards.list .tool-desc {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 列表模式：标签显示在右侧 */
+.home-cards.list .tool-tags {
+  flex-shrink: 0;
+  margin-top: 0;
+}
+
+.home-cards.list .tool-trail {
+  position: static;
+  margin-left: auto;
+}
+
+/* ---------- 空态 ---------- */
 .home-empty {
   padding: 60px 40px;
   text-align: center;
   color: oklch(60% 0.02 160);
-  background: transparent;
+}
+
+@media (max-width: 640px) {
+  .home-header {
+    padding: 28px 16px 20px;
+  }
+
+  .home-header h1 {
+    font-size: 26px;
+  }
+
+  .home-content {
+    padding: 16px;
+  }
 }

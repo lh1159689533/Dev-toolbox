@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ToolMeta } from '../../types';
 import tools from '../../data/tools.json';
@@ -7,24 +7,84 @@ import './index.css';
 
 const allTools = tools as ToolMeta[];
 
+/** 视图模式持久化 key（网格 / 列表） */
+const VIEW_MODE_KEY = 'dev-toolbox:home-view-mode';
+
+type ViewMode = 'grid' | 'list';
+
 /** 将 icon 的相对路径（如 ./public/foo.png）转换为静态资源根访问路径（如 /foo.png） */
 function resolveIconSrc(icon: string): string {
   return icon.replace(/^\.\/public/, '');
 }
 
-/** 点击工具卡片：external 新开 tab，internal 走本地路由 */
+/** url 有值 = 外部工具；否则 path 有值 = 内部工具 */
+function isExternal(tool: ToolMeta): boolean {
+  return Boolean(tool.url);
+}
+
+/** 打开工具：外部工具新开 tab，内部工具走本地路由 */
 function openTool(tool: ToolMeta, navigate: (path: string) => void) {
-  if (tool.type === 'external') {
-    if (tool.url) window.open(tool.url, '_blank', 'noopener,noreferrer');
+  if (tool.url) {
+    window.open(tool.url, '_blank', 'noopener,noreferrer');
     return;
   }
   if (tool.path) navigate(tool.path);
 }
 
+function readViewMode(): ViewMode {
+  try {
+    return localStorage.getItem(VIEW_MODE_KEY) === 'list' ? 'list' : 'grid';
+  } catch {
+    return 'grid';
+  }
+}
+
+function GridIcon({ active }: { active: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth={active ? 2 : 1.6} />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth={active ? 2 : 1.6} />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth={active ? 2 : 1.6} />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth={active ? 2 : 1.6} />
+    </svg>
+  );
+}
+
+function ListIcon({ active }: { active: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+      <path d="M4 6h16" stroke="currentColor" strokeWidth={active ? 2 : 1.6} strokeLinecap="round" />
+      <path d="M4 12h16" stroke="currentColor" strokeWidth={active ? 2 : 1.6} strokeLinecap="round" />
+      <path d="M4 18h16" stroke="currentColor" strokeWidth={active ? 2 : 1.6} strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** 外部跳转图标 */
+function JumpIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" aria-hidden="true">
+      <path d="M9 4H4v16h16v-5" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
+      <path d="M19.25 4.75 12 12M14 4h6v6" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
+    </svg>
+  );
+}
+
+
 export default function HomePage() {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState('全部');
+  const [viewMode, setViewMode] = useState<ViewMode>(readViewMode);
+
+  // 视图模式写入本地存储，下次进入保持上次选择
+  useEffect(() => {
+    try {
+      localStorage.setItem(VIEW_MODE_KEY, viewMode);
+    } catch {
+      /* localStorage 不可用时忽略 */
+    }
+  }, [viewMode]);
 
   // 仅展示 enabled 的工具
   const enabledTools = useMemo(() => allTools.filter((t) => t.enabled), []);
@@ -59,77 +119,104 @@ export default function HomePage() {
   return (
     <div className="home">
       <header className="home-header">
-        <h1>开发者工具集</h1>
-        <p className="home-subtitle">常用开发小工具</p>
+        <div className="home-header-inner">
+          <h1>开发者工具集</h1>
+          <p className="home-subtitle">常用开发小工具，按名称、功能或分类搜索，找到刚好能帮上忙的那一个</p>
+        </div>
       </header>
 
-      <div className="home-body">
-        <aside className="home-sidebar">
+      <div className="home-content">
+        <div className="home-toolbar">
           <div className="home-search">
-            <Input type="text" placeholder="搜索工具…" value={keyword} onChange={(e) => setKeyword(e.target.value)} />
+            <svg className="home-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
+              <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="2" />
+              <path d="m16 16 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <Input
+              type="text"
+              placeholder="搜索工具、功能或标签…"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              aria-label="搜索工具"
+            />
           </div>
-          <nav className="home-categories">
+          <div className="home-view-toggle" role="group" aria-label="切换展示模式">
             <button
               type="button"
-              className={`home-cat${category === '全部' ? ' active' : ''}`}
-              onClick={() => setCategory('全部')}
+              className={`home-view-btn${viewMode === 'grid' ? ' active' : ''}`}
+              onClick={() => setViewMode('grid')}
+              aria-pressed={viewMode === 'grid'}
+              title="网格模式"
             >
-              <span>全部</span>
-              <span className="home-count">{countByCategory['全部'] ?? 0}</span>
+              <GridIcon active={viewMode === 'grid'} />
             </button>
-            {categories.map((c) => (
-              <button
-                key={c}
-                type="button"
-                className={`home-cat${category === c ? ' active' : ''}`}
-                onClick={() => setCategory(c)}
-              >
-                <span>{c}</span>
-                <span className="home-count">{countByCategory[c] ?? 0}</span>
+            <button
+              type="button"
+              className={`home-view-btn${viewMode === 'list' ? ' active' : ''}`}
+              onClick={() => setViewMode('list')}
+              aria-pressed={viewMode === 'list'}
+              title="列表模式"
+            >
+              <ListIcon active={viewMode === 'list'} />
+            </button>
+          </div>
+        </div>
+
+        <nav className="home-categories">
+          <button
+            type="button"
+            className={`home-cat${category === '全部' ? ' active' : ''}`}
+            onClick={() => setCategory('全部')}
+          >
+            <span>全部</span>
+            <span className="home-count">{countByCategory['全部'] ?? 0}</span>
+          </button>
+          {categories.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={`home-cat${category === c ? ' active' : ''}`}
+              onClick={() => setCategory(c)}
+            >
+              <span>{c}</span>
+              <span className="home-count">{countByCategory[c] ?? 0}</span>
+            </button>
+          ))}
+        </nav>
+
+        {filtered.length === 0 ? (
+          <div className="home-empty">没有匹配的工具</div>
+        ) : (
+          <div className={`home-cards ${viewMode}`}>
+            {filtered.map((t) => (
+              <button key={t.id} type="button" className="tool-card" onClick={() => openTool(t, navigate)}>
+                <span className="tool-head">
+                  <span className="tool-icon-box">
+                    <img className="tool-icon" src={resolveIconSrc(t.icon)} alt="" />
+                  </span>
+                  <span className="tool-title-wrap">
+                    <span className="tool-name">{t.name}</span>
+                    <span className="tool-category tool-category-sub">{t.category}</span>
+                  </span>
+                </span>
+                <span className="tool-body">
+                  <span className="tool-category tool-category-main">{t.category}</span>
+                  <span className="tool-desc">{t.description}</span>
+                </span>
+                {t.keywords.length > 0 && (
+                  <span className="tool-tags">
+                    {t.keywords.slice(0, 3).map((k) => (
+                      <span key={k} className="tool-tag">
+                        #{k}
+                      </span>
+                    ))}
+                  </span>
+                )}
+                <span className="tool-trail">{isExternal(t) ? <JumpIcon /> : null}</span>
               </button>
             ))}
-          </nav>
-        </aside>
-
-        <main className="home-main">
-          {filtered.length === 0 ? (
-            <div className="home-empty">没有匹配的工具</div>
-          ) : (
-            <div className="home-grid">
-              {filtered.map((t) => (
-                <button key={t.id} type="button" className="tool-card" onClick={() => openTool(t, navigate)}>
-                  {t.type === 'external' && (
-                    <span className="tool-external">
-                      <svg fill="none" viewBox="0 0 24 24" width="1em" height="1em" className="t-icon t-icon-jump">
-                        <g id="jump">
-                          <path
-                            id="stroke1"
-                            stroke="currentColor"
-                            d="M9 4L4 4L4 20L20 20L20 15"
-                            stroke-linecap="square"
-                            stroke-width="2"
-                          ></path>
-                          <path
-                            id="stroke2"
-                            stroke="currentColor"
-                            d="M19.25 4.75L12 12M14 4H20L20 10"
-                            stroke-linecap="square"
-                            stroke-width="2"
-                          ></path>
-                        </g>
-                      </svg>
-                    </span>
-                  )}
-                  <div className="tool-header">
-                    <img className="tool-icon" src={resolveIconSrc(t.icon)} alt="" />
-                    <span className="tool-name">{t.name}</span>
-                  </div>
-                  <span className="tool-desc">{t.description}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </main>
+          </div>
+        )}
       </div>
     </div>
   );
