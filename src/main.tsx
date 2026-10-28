@@ -7,6 +7,8 @@ import TimestampConverter from './pages/TimestampConverter';
 import TextDiffTool from './pages/TextDiffTool';
 import JsonDupKey from './pages/JsonDupKey';
 import RpaRecorder from './pages/RpaRecorder';
+import SiteCollection from './pages/SiteCollection';
+import ScrollRevealDemo from './pages/ScrollRevealDemo';
 import SettingsDrawer from './components/SettingsDrawer';
 import './index.css';
 import './styles/scrollbar.css';
@@ -22,6 +24,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <Route path="/tools/text-diff" element={<TextDiffTool />} />
       <Route path="/tools/json-dup-key" element={<JsonDupKey />} />
       <Route path="/tools/rpa-recorder" element={<RpaRecorder />} />
+      <Route path="/tools/sites" element={<SiteCollection />} />
+      <Route path="/demo/scroll-reveal" element={<ScrollRevealDemo />} />
     </Routes>
   </HashRouter>,
 );

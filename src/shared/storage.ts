@@ -27,6 +27,10 @@ export const STORAGE_KEYS = {
   jsonFormatterHistory: 'dev-toolbox:json-formatter:history',
   /** JSON 格式化历史记录条数上限 */
   jsonFormatterHistoryLimit: 'dev-toolbox:json-formatter:history-limit',
+  /** 网站收藏：网站列表 */
+  sitesItems: 'dev-toolbox:sites:items',
+  /** 网站收藏：分类列表 */
+  sitesCategories: 'dev-toolbox:sites:categories',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

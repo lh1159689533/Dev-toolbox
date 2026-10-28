@@ -103,7 +103,7 @@ export default function SettingsDrawer() {
           </button>
         </header>
         <div className="drawer-body">
-          <SettingsForm showJsonHistory />
+          <SettingsForm showJsonHistory showSiteCategories />
         </div>
       </aside>
     </>

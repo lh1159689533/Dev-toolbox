@@ -143,3 +143,68 @@
   color: #fff;
   background-color: var(--dev-toolbox-primary);
 }
+
+/* 网站收藏：分类管理 */
+.settings-form .sf-cat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.settings-form .sf-cat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border: 1px solid var(--dev-toolbox-border);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.settings-form .sf-cat-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.settings-form .sf-cat-edit {
+  border: none;
+  background: none;
+  color: var(--dev-toolbox-primary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.settings-form .sf-cat-edit:hover {
+  background: var(--dev-toolbox-primary-soft);
+}
+
+.settings-form .sf-cat-edit-input {
+  flex: 1;
+}
+
+.settings-form .sf-cat-del {
+  border: none;
+  background: none;
+  color: var(--dev-toolbox-danger);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.settings-form .sf-cat-del:hover {
+  background: var(--dev-toolbox-danger-soft);
+}
+
+.settings-form .sf-cat-add {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-form .sf-cat-add .dt-input {
+  flex: 1;
+}

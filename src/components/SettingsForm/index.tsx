@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { STORAGE_KEYS, storageGetMany, storageSetMany } from '../../shared/storage';
 import {
   clampHistoryLimit,
@@ -9,6 +9,7 @@ import {
 } from '../../shared/json-history';
 import Input from '../Input';
 import Button from '../Button';
+import { getCategories, getSites, saveCategories, saveSites } from '../../shared/sites';
 import './index.css';
 
 interface DefaultQuery {
@@ -54,13 +55,20 @@ function DecreaseIcon() {
 interface SettingsFormProps {
   /** 是否显示「JSON 格式化」历史记录条数配置（仅主应用设置抽屉需要） */
   showJsonHistory?: boolean;
+  /** 是否显示「网站收藏」分类管理（仅主应用设置抽屉需要） */
+  showSiteCategories?: boolean;
 }
 
 /** 设置表单：配置认证凭证、默认查询条件与 JSON 历史条数，保存到 chrome.storage.local */
-export default function SettingsForm({ showJsonHistory = false }: SettingsFormProps) {
+export default function SettingsForm({ showJsonHistory = false, showSiteCategories = false }: SettingsFormProps) {
   const [settings, setSettings] = useState<Settings>(EMPTY_SETTINGS);
   const [loaded, setLoaded] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [siteCategories, setSiteCategories] = useState<string[]>([]);
+  const [newCategory, setNewCategory] = useState('');
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState('');
+  const cancelBlurRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -91,6 +99,70 @@ export default function SettingsForm({ showJsonHistory = false }: SettingsFormPr
       cancelled = true;
     };
   }, [showJsonHistory]);
+
+  // 加载网站收藏分类列表（即时读写，不走「保存」按钮）
+  useEffect(() => {
+    if (!showSiteCategories) return;
+    void getCategories().then(setSiteCategories);
+  }, [showSiteCategories]);
+
+  const addCategory = async () => {
+    const v = newCategory.trim();
+    if (!v || siteCategories.includes(v)) return;
+    const next = [...siteCategories, v];
+    await saveCategories(next);
+    setSiteCategories(next);
+    setNewCategory('');
+  };
+
+  const removeCategory = async (cat: string) => {
+    const sites = await getSites();
+    const count = sites.filter((s) => s.category === cat).length;
+    const tip = count > 0 ? `该分类下 ${count} 个网站将自动归入「未分类」。` : '';
+    if (!window.confirm(`确定删除分类「${cat}」吗？${tip}`)) return;
+
+    const next = siteCategories.filter((c) => c !== cat);
+    await saveCategories(next);
+    setSiteCategories(next);
+
+    const changed = sites.map((s) => (s.category === cat ? { ...s, category: '' } : s));
+    await saveSites(changed);
+  };
+
+  const startEdit = (cat: string) => {
+    setEditingCategory(cat);
+    setEditingValue(cat);
+  };
+
+  const cancelEdit = () => {
+    setEditingCategory(null);
+    setEditingValue('');
+  };
+
+  const saveEdit = async () => {
+    if (editingCategory === null) return;
+    const v = editingValue.trim();
+    // 空值或未变化：直接取消（保持原名）
+    if (!v || v === editingCategory) {
+      cancelEdit();
+      return;
+    }
+    // 与其他分类重名：取消（不保存）
+    if (siteCategories.includes(v)) {
+      cancelEdit();
+      return;
+    }
+
+    const next = siteCategories.map((c) => (c === editingCategory ? v : c));
+    await saveCategories(next);
+    setSiteCategories(next);
+
+    const sites = await getSites();
+    const changed = sites.map((s) => (s.category === editingCategory ? { ...s, category: v } : s));
+    await saveSites(changed);
+
+    cancelEdit();
+  };
 
   const updateField = (key: 'gitToken' | 'tapdAuth', value: string) => {
     setSettings((s) => ({ ...s, [key]: value }));
@@ -251,6 +323,76 @@ export default function SettingsForm({ showJsonHistory = false }: SettingsFormPr
           <p className="hint">
             范围 {MIN_HISTORY_LIMIT} ~ {MAX_HISTORY_LIMIT}，默认 {DEFAULT_HISTORY_LIMIT} 条。
           </p>
+        </section>
+      )}
+
+      {showSiteCategories && (
+        <section className="form-section">
+          <h2>网站收藏</h2>
+          <p className="hint">管理「网站收藏」工具的分类；删除分类后，其下网站会自动归入「未分类」。</p>
+          <div className="sf-cat-list">
+            {siteCategories.length === 0 ? (
+              <p className="hint">暂无分类，可在下方添加。</p>
+            ) : (
+              siteCategories.map((c) =>
+                editingCategory === c ? (
+                  <div key={c} className="sf-cat-item">
+                    <Input
+                      autoFocus
+                      size="small"
+                      className="sf-cat-edit-input"
+                      value={editingValue}
+                      onChange={(e) => setEditingValue(e.target.value)}
+                      onFocus={(e) => e.currentTarget.select()}
+                      onBlur={() => {
+                        if (cancelBlurRef.current) {
+                          cancelBlurRef.current = false;
+                          return;
+                        }
+                        void saveEdit();
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          void saveEdit();
+                        } else if (e.key === 'Escape') {
+                          e.preventDefault();
+                          cancelBlurRef.current = true;
+                          cancelEdit();
+                        }
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div key={c} className="sf-cat-item">
+                    <span>{c}</span>
+                    <div className="sf-cat-actions">
+                      <button type="button" className="sf-cat-edit" onClick={() => startEdit(c)}>
+                        编辑
+                      </button>
+                      <button type="button" className="sf-cat-del" onClick={() => void removeCategory(c)}>
+                        删除
+                      </button>
+                    </div>
+                  </div>
+                )
+              )
+            )}
+          </div>
+          <div className="sf-cat-add">
+            <Input
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              placeholder="输入新分类名"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void addCategory();
+                }
+              }}
+            />
+            <Button onClick={() => void addCategory()}>添加</Button>
+          </div>
         </section>
       )}
 

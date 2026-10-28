@@ -27,3 +27,59 @@ textarea {
   font-family: inherit;
   font-size: 14px;
 }
+
+/* ===== 滚动入场动画（参考 GSAP ScrollTrigger fade-up / slide-in） =====
+ * 由 useScrollReveal hook 动态添加 reveal-item / reveal-in 两个 class 驱动。
+ * 用 CSS animation 实现，避免覆盖卡片原有的 hover transition（border-color/box-shadow/transform）。
+ */
+
+/* grid 模式：淡入上移 */
+.reveal-item {
+  opacity: 0;
+  translate: 0 24px;
+}
+
+.reveal-item.reveal-in {
+  animation: reveal-fade-up 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes reveal-fade-up {
+  from {
+    opacity: 0;
+    translate: 0 24px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* list 模式：横向滑入（从左） */
+.reveal-item-x {
+  opacity: 0;
+  translate: -34px 0;
+}
+
+.reveal-item-x.reveal-in-x {
+  animation: reveal-slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes reveal-slide-in {
+  from {
+    opacity: 0;
+    translate: -34px 0;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-item,
+  .reveal-item-x {
+    opacity: 1;
+    translate: none;
+    animation: none !important;
+  }
+}

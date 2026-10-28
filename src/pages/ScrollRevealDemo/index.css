@@ -1,0 +1,208 @@
+.demo-app {
+  min-height: 100vh;
+}
+
+.demo-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 20px 24px;
+  background: oklch(97% 0.01 160);
+  border-bottom: 1px solid oklch(90% 0.02 160);
+}
+
+.demo-bar-text h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: oklch(25% 0.02 160);
+  margin: 0;
+}
+
+.demo-bar-text p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: oklch(55% 0.02 160);
+  max-width: 640px;
+  line-height: 1.6;
+}
+
+.demo-toggle {
+  display: flex;
+  flex-shrink: 0;
+  border: 1px solid oklch(88% 0.02 160);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.demo-toggle-btn {
+  padding: 9px 16px;
+  border: none;
+  background: #fff;
+  color: oklch(60% 0.02 160);
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.demo-toggle-btn + .demo-toggle-btn {
+  border-left: 1px solid oklch(88% 0.02 160);
+}
+
+.demo-toggle-btn:hover {
+  background: oklch(96% 0.015 160);
+}
+
+.demo-toggle-btn.active {
+  background: oklch(50% 0.07 160);
+  color: #fff;
+  font-weight: 600;
+}
+
+.demo-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.demo-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid oklch(92% 0.02 160);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.demo-icon-box {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: oklch(96% 0.02 160);
+}
+
+.demo-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  display: block;
+}
+
+.demo-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.demo-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.demo-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: oklch(35% 0.04 160);
+  white-space: nowrap;
+}
+
+.demo-cat {
+  font-size: 12px;
+  color: oklch(50% 0.07 160);
+}
+
+.demo-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: oklch(55% 0.02 160);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.demo-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.demo-tag {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: oklch(96% 0.015 160);
+  color: oklch(50% 0.04 160);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* ===== 列表滚动入场动画（两种变体） ===== */
+
+/* 上移淡入 */
+.demo-item-y {
+  opacity: 0;
+  translate: 0 26px;
+}
+
+.demo-item-y.demo-in-y {
+  animation: demo-fade-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes demo-fade-up {
+  from {
+    opacity: 0;
+    translate: 0 26px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* 横向滑入（从左） */
+.demo-item-x {
+  opacity: 0;
+  translate: -34px 0;
+}
+
+.demo-item-x.demo-in-x {
+  animation: demo-slide-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes demo-slide-in {
+  from {
+    opacity: 0;
+    translate: -34px 0;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-item-y,
+  .demo-item-x {
+    opacity: 1;
+    translate: none;
+    animation: none !important;
+  }
+}

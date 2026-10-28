@@ -20,7 +20,7 @@
     "id": "json-formatter",
     "name": "JSON 格式化",
     "description": "JSON字符串格式化",
-    "category": "开发协作",
+    "category": "数据处理",
     "keywords": [
       "json",
       "格式化"
@@ -33,7 +33,7 @@
     "id": "timestamp",
     "name": "时间戳转换",
     "description": "时间戳与日期相互转换",
-    "category": "开发协作",
+    "category": "数据处理",
     "keywords": [
       "时间戳",
       "时间戳转换"
@@ -46,7 +46,7 @@
     "id": "text-diff",
     "name": "文本差异对比",
     "description": "对比左右两个文本内容，标记出差异",
-    "category": "开发协作",
+    "category": "数据处理",
     "keywords": [
       "diff",
       "对比",
@@ -61,7 +61,7 @@
     "id": "json-dup-key",
     "name": "JSON 重复 Key 检测",
     "description": "识别 JSON 最外层对象中重复的 key，支持删除去重",
-    "category": "开发协作",
+    "category": "数据处理",
     "keywords": [
       "json",
       "重复",
@@ -77,7 +77,7 @@
     "id": "rpa-recorder",
     "name": "录制管理",
     "description": "录制浏览器操作并一键回放，自动完成重复自测流程",
-    "category": "开发协作",
+    "category": "自动化",
     "keywords": [
       "rpa",
       "录制",
@@ -87,6 +87,22 @@
     ],
     "icon": "./public/icons/record.svg",
     "path": "/tools/rpa-recorder",
+    "enabled": true
+  },
+  {
+    "id": "site-collection",
+    "name": "网站收藏",
+    "description": "收集、分类、搜索常用网站，支持导入导出",
+    "category": "效率工具",
+    "keywords": [
+      "网站",
+      "收藏",
+      "导航",
+      "书签",
+      "网址"
+    ],
+    "icon": "./public/icons/sites.svg",
+    "path": "/tools/sites",
     "enabled": true
   }
 ]

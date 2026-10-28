@@ -2,11 +2,51 @@
   min-height: 100vh;
 }
 
-/* ---------- 页头 ---------- */
+/* ---------- 窄条吸顶 header：滚动超过大标题区后淡入 ---------- */
+.home-narrow-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  height: 56px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  background: linear-gradient(90deg, rgb(200, 231, 213), rgb(200, 231, 213), rgb(236, 244, 239));
+  box-shadow: 0 4px 16px oklch(20% 0.02 160 / 14%);
+  opacity: 0;
+  transform: translateY(-100%);
+  pointer-events: none;
+  transition:
+    opacity 0.25s,
+    transform 0.25s;
+}
+
+.home-narrow-header.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.home-narrow-inner {
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.home-narrow-header h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: oklch(30% 0.05 160);
+}
+
+/* ---------- 页头（大标题区，渐变背景，不吸顶） ---------- */
 .home-header {
   padding: 40px 24px 28px;
-  border-bottom: 1px solid oklch(90% 0.02 160);
-  background: oklch(97% 0.01 160);
+  border-bottom: none;
+  background: linear-gradient(90deg, rgb(200, 231, 213), rgb(200, 231, 213), rgb(236, 244, 239));
 }
 
 .home-header-inner {
@@ -37,33 +77,39 @@
   padding: 24px;
 }
 
-/* ---------- 工具条：搜索 + 视图切换 ---------- */
-.home-toolbar {
+/* ---------- 内容区顶栏：视图切换（卡片右上方） ---------- */
+.home-content-bar {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  justify-content: flex-end;
 }
 
-.home-search {
-  position: relative;
-  flex: 1;
-  min-width: 0;
+/* ---------- 搜索框：居中 + 阴影 ---------- */
+.home-search-row {
+  max-width: 800px;
+  margin: 28px auto 0;
+  padding: 0 24px;
 }
 
-.home-search-icon {
-  position: absolute;
-  top: 50%;
-  left: 12px;
-  transform: translateY(-50%);
-  color: oklch(60% 0.02 160);
-  pointer-events: none;
+.home-search-row .search-input .dt-input {
+  height: 48px;
+  border: 1px solid oklch(88% 0.02 160);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 8px 24px oklch(30% 0.03 160 / 12%);
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s;
 }
 
-.home-search .dt-input {
-  width: 100%;
-  height: 40px;
-  padding-left: 36px;
-  border-radius: 20px;
+.home-search-row .search-input .dt-input:hover {
+  box-shadow: 0 10px 28px oklch(30% 0.03 160 / 16%);
+}
+
+.home-search-row .search-input .dt-input:focus {
+  border-color: var(--dev-toolbox-primary);
+  box-shadow:
+    0 10px 28px oklch(40% 0.06 160 / 22%),
+    var(--dev-toolbox-focus-ring);
 }
 
 .home-view-toggle {
@@ -101,12 +147,25 @@
   color: oklch(45% 0.07 160);
 }
 
-/* ---------- 分类 pills ---------- */
+/* ---------- 分类 pills：吸顶（贴到窄条 header 下方） ---------- */
 .home-categories {
+  position: sticky;
+  top: 56px;
+  z-index: 30;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 16px;
+  max-width: 1200px;
+  margin: 16px auto 0;
+  padding: 12px 24px;
+  transition:
+    background 0.2s,
+    box-shadow 0.2s;
+}
+
+/* 分类吸附到窄条 header 下方后：不透明背景遮住滚过的内容 */
+.home-categories.stuck {
+  background: oklch(96% 0.01 160);
 }
 
 .home-cat {
@@ -119,15 +178,21 @@
   background: #fff;
   color: oklch(45% 0.02 160);
   font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px oklch(30% 0.03 160 / 6%);
   transition:
     background 0.15s,
     border-color 0.15s,
-    color 0.15s;
+    color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
 }
 
 .home-cat:hover {
   border-color: oklch(70% 0.05 160);
   background: oklch(96% 0.015 160);
+  box-shadow: 0 5px 14px oklch(30% 0.03 160 / 14%);
+  transform: translateY(-1px);
 }
 
 .home-cat.active {
@@ -135,6 +200,7 @@
   background: oklch(50% 0.07 160);
   color: #fff;
   font-weight: 600;
+  box-shadow: 0 6px 16px oklch(50% 0.07 160 / 28%);
 }
 
 .home-count {
@@ -150,7 +216,7 @@
 .home-cards {
   display: grid;
   gap: 16px;
-  margin-top: 24px;
+  margin-top: 16px;
 }
 
 .home-cards.grid {
@@ -173,6 +239,7 @@
   border-radius: 10px;
   background: #fff;
   text-align: left;
+  overflow: hidden;
   transition:
     border-color 0.15s,
     box-shadow 0.15s,
@@ -181,8 +248,88 @@
 
 .tool-card:hover {
   border-color: oklch(50% 0.07 160);
-  box-shadow: 0 6px 16px oklch(20% 0.02 160 / 8%);
+  /* 常驻内边光晕（两层 inset）+ 原有外阴影 */
+  box-shadow:
+    0 6px 16px oklch(20% 0.02 160 / 8%),
+    inset 0 0 10px oklch(50% 0.07 160 / 28%),
+    inset 0 0 24px oklch(50% 0.07 160 / 14%);
   transform: translateY(-2px);
+  animation: tool-edge-glow 2.6s ease-in-out infinite;
+}
+
+/* 卡片内四周常驻光晕：呼吸式明暗变化 */
+@keyframes tool-edge-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 6px 16px oklch(20% 0.02 160 / 8%),
+      inset 0 0 10px oklch(50% 0.07 160 / 28%),
+      inset 0 0 24px oklch(50% 0.07 160 / 14%);
+  }
+  50% {
+    box-shadow:
+      0 6px 16px oklch(20% 0.02 160 / 8%),
+      inset 0 0 14px oklch(50% 0.07 160 / 44%),
+      inset 0 0 32px oklch(50% 0.07 160 / 22%);
+  }
+}
+
+/* ===== 卡片 hover 边线光效（与网站收藏一致） =====
+ * 两团长条光晕从上边线中心左右两侧出现，分别沿边线绕行，最后在下边线中心汇合消失。
+ * offset-path 匀速运动 + offset-rotate auto 自动朝向，单次播放。
+ */
+.tool-card::before,
+.tool-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 110px;
+  height: 10px;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in oklab, var(--dev-toolbox-primary) 75%, white) 0%,
+    color-mix(in oklab, var(--dev-toolbox-primary) 65%, transparent) 55%,
+    transparent 100%
+  );
+  filter: blur(2px);
+  z-index: 1;
+}
+
+.tool-card:hover::before {
+  offset-path: shape(from 44% 0%, line to 0% 0%, line to 0% 100%, line to 50% 100%);
+  animation: tool-glow-run 1.4s linear forwards;
+}
+
+.tool-card:hover::after {
+  offset-path: shape(from 56% 0%, line to 100% 0%, line to 100% 100%, line to 50% 100%);
+  animation: tool-glow-run 1.4s linear forwards;
+}
+
+/* 列表卡片更宽、路径更长，放慢一点保持视觉速度接近 */
+.home-cards.list .tool-card:hover::before,
+.home-cards.list .tool-card:hover::after {
+  animation-duration: 1.7s;
+}
+
+@keyframes tool-glow-run {
+  0% {
+    offset-distance: 0%;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    offset-distance: 100%;
+    opacity: 0;
+  }
 }
 
 .tool-icon-box {
@@ -218,19 +365,6 @@
   min-width: 0;
 }
 
-/* 分类展示位：网格模式显示在描述上方（main），列表模式显示在标题下方（sub） */
-.tool-category-sub {
-  display: none;
-}
-
-.tool-body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-  width: 100%;
-}
-
 .tool-category {
   font-size: 12px;
   color: oklch(50% 0.07 160);
@@ -243,6 +377,8 @@
 }
 
 .tool-desc {
+  width: 100%;
+  min-width: 0;
   font-size: 13px;
   line-height: 1.5;
   color: oklch(55% 0.02 160);
@@ -294,26 +430,24 @@
   transform: none;
 }
 
-/* 列表模式：head 拆开，图标、标题、描述水平排布且垂直居中 */
-.home-cards.list .tool-head {
-  display: contents;
+/* 列表模式：图标 + main（名称/分类同行 + 描述） + 标签 + 跳转 */
+.home-cards.list .tool-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.home-cards.list .tool-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
 }
 
 .home-cards.list .tool-name {
   white-space: nowrap;
-}
-
-/* 列表模式：分类移到标题下方 */
-.home-cards.list .tool-category-main {
-  display: none;
-}
-
-.home-cards.list .tool-category-sub {
-  display: block;
-}
-
-.home-cards.list .tool-body {
-  flex: 1;
 }
 
 .home-cards.list .tool-desc {
@@ -351,5 +485,14 @@
 
   .home-content {
     padding: 16px;
+  }
+
+  .home-search-row {
+    margin-top: 20px;
+    padding: 0 16px;
+  }
+
+  .home-categories {
+    padding: 0 16px 12px;
   }
 }

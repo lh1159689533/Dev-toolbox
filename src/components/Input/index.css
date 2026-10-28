@@ -34,3 +34,45 @@
   padding: 0 8px;
   font-size: 12px;
 }
+
+/* ---------- 可清空输入框 ---------- */
+.dt-input-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.dt-input-wrap .dt-input {
+  width: 100%;
+  padding-right: 32px;
+}
+
+.dt-input-clear {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--dev-toolbox-text-secondary, oklch(60% 0.02 160));
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.dt-input-clear:hover {
+  background: oklch(90% 0.02 160);
+  color: oklch(40% 0.05 160);
+}
+
+.dt-input-clear:focus-visible {
+  outline: 2px solid var(--dev-toolbox-primary);
+  outline-offset: 1px;
+}

@@ -1,14 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ToolMeta } from '../../types';
 import tools from '../../data/tools.json';
-import Input from '../../components/Input';
+import SearchInput from '../../components/SearchInput';
+import { useScrollReveal } from '../../shared/useScrollReveal';
 import './index.css';
 
 const allTools = tools as ToolMeta[];
 
 /** 视图模式持久化 key（网格 / 列表） */
 const VIEW_MODE_KEY = 'dev-toolbox:home-view-mode';
+
+/** 吸顶窄条 header 高度，需与 index.css 中 .home-narrow-header 的 height 保持一致 */
+const HEADER_HEIGHT = 56;
 
 type ViewMode = 'grid' | 'list';
 
@@ -70,12 +74,39 @@ function JumpIcon() {
   );
 }
 
-
 export default function HomePage() {
   const navigate = useNavigate();
   const [keyword, setKeyword] = useState('');
   const [category, setCategory] = useState('全部');
   const [viewMode, setViewMode] = useState<ViewMode>(readViewMode);
+  const [stuck, setStuck] = useState(false);
+  const [catStuck, setCatStuck] = useState(false);
+  const cardsRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const catRef = useRef<HTMLElement>(null);
+
+  // 吸顶状态：滚动超过大标题区高度后显示窄条 header；分类贴到窄条 header 下方时吸附
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      const header = headerRef.current;
+      setStuck(header ? window.scrollY > header.offsetHeight : window.scrollY > 0);
+      const cat = catRef.current;
+      setCatStuck(!!cat && cat.getBoundingClientRect().top <= HEADER_HEIGHT);
+    };
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, []);
 
   // 视图模式写入本地存储，下次进入保持上次选择
   useEffect(() => {
@@ -116,30 +147,63 @@ export default function HomePage() {
     return map;
   }, [enabledTools]);
 
+  // 卡片滚动入场动画：grid 淡入上移、list 横向滑入，仅向下滚动时触发
+  useScrollReveal(cardsRef, {
+    enabled: true,
+    items: filtered,
+    direction: 'down',
+    itemClassName: viewMode === 'list' ? 'reveal-item-x' : 'reveal-item',
+    inClassName: viewMode === 'list' ? 'reveal-in-x' : 'reveal-in',
+  });
+
   return (
     <div className="home">
-      <header className="home-header">
+      <header className={`home-narrow-header${stuck ? ' show' : ''}`}>
+        <div className="home-narrow-inner">
+          <h1>开发者工具集</h1>
+        </div>
+      </header>
+
+      <header ref={headerRef} className="home-header">
         <div className="home-header-inner">
           <h1>开发者工具集</h1>
           <p className="home-subtitle">常用开发小工具，按名称、功能或分类搜索，找到刚好能帮上忙的那一个</p>
         </div>
       </header>
 
+      <div className="home-search-row">
+        <SearchInput
+          placeholder="搜索工具、功能或标签…"
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          aria-label="搜索工具"
+        />
+      </div>
+
+      <nav ref={catRef} className={`home-categories${catStuck ? ' stuck' : ''}`}>
+        <button
+          type="button"
+          className={`home-cat${category === '全部' ? ' active' : ''}`}
+          onClick={() => setCategory('全部')}
+        >
+          <span>全部</span>
+          <span className="home-count">{countByCategory['全部'] ?? 0}</span>
+        </button>
+        {categories.map((c) => (
+          <button
+            key={c}
+            type="button"
+            className={`home-cat${category === c ? ' active' : ''}`}
+            onClick={() => setCategory(c)}
+          >
+            <span>{c}</span>
+            <span className="home-count">{countByCategory[c] ?? 0}</span>
+          </button>
+        ))}
+      </nav>
+
       <div className="home-content">
-        <div className="home-toolbar">
-          <div className="home-search">
-            <svg className="home-search-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true">
-              <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="2" />
-              <path d="m16 16 4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <Input
-              type="text"
-              placeholder="搜索工具、功能或标签…"
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              aria-label="搜索工具"
-            />
-          </div>
+        <div className="home-content-bar">
           <div className="home-view-toggle" role="group" aria-label="切换展示模式">
             <button
               type="button"
@@ -161,49 +225,13 @@ export default function HomePage() {
             </button>
           </div>
         </div>
-
-        <nav className="home-categories">
-          <button
-            type="button"
-            className={`home-cat${category === '全部' ? ' active' : ''}`}
-            onClick={() => setCategory('全部')}
-          >
-            <span>全部</span>
-            <span className="home-count">{countByCategory['全部'] ?? 0}</span>
-          </button>
-          {categories.map((c) => (
-            <button
-              key={c}
-              type="button"
-              className={`home-cat${category === c ? ' active' : ''}`}
-              onClick={() => setCategory(c)}
-            >
-              <span>{c}</span>
-              <span className="home-count">{countByCategory[c] ?? 0}</span>
-            </button>
-          ))}
-        </nav>
-
         {filtered.length === 0 ? (
           <div className="home-empty">没有匹配的工具</div>
         ) : (
-          <div className={`home-cards ${viewMode}`}>
-            {filtered.map((t) => (
-              <button key={t.id} type="button" className="tool-card" onClick={() => openTool(t, navigate)}>
-                <span className="tool-head">
-                  <span className="tool-icon-box">
-                    <img className="tool-icon" src={resolveIconSrc(t.icon)} alt="" />
-                  </span>
-                  <span className="tool-title-wrap">
-                    <span className="tool-name">{t.name}</span>
-                    <span className="tool-category tool-category-sub">{t.category}</span>
-                  </span>
-                </span>
-                <span className="tool-body">
-                  <span className="tool-category tool-category-main">{t.category}</span>
-                  <span className="tool-desc">{t.description}</span>
-                </span>
-                {t.keywords.length > 0 && (
+          <div ref={cardsRef} className={`home-cards ${viewMode}`}>
+            {filtered.map((t) => {
+              const tags =
+                t.keywords.length > 0 ? (
                   <span className="tool-tags">
                     {t.keywords.slice(0, 3).map((k) => (
                       <span key={k} className="tool-tag">
@@ -211,10 +239,45 @@ export default function HomePage() {
                       </span>
                     ))}
                   </span>
-                )}
-                <span className="tool-trail">{isExternal(t) ? <JumpIcon /> : null}</span>
-              </button>
-            ))}
+                ) : null;
+              const trail = <span className="tool-trail">{isExternal(t) ? <JumpIcon /> : null}</span>;
+
+              if (viewMode === 'list') {
+                return (
+                  <button key={t.id} type="button" className="tool-card" onClick={() => openTool(t, navigate)}>
+                    <span className="tool-icon-box">
+                      <img className="tool-icon" src={resolveIconSrc(t.icon)} alt="" />
+                    </span>
+                    <span className="tool-main">
+                      <span className="tool-name-row">
+                        <span className="tool-name">{t.name}</span>
+                        <span className="tool-category">{t.category}</span>
+                      </span>
+                      <span className="tool-desc">{t.description}</span>
+                    </span>
+                    {tags}
+                    {trail}
+                  </button>
+                );
+              }
+
+              return (
+                <button key={t.id} type="button" className="tool-card" onClick={() => openTool(t, navigate)}>
+                  <span className="tool-head">
+                    <span className="tool-icon-box">
+                      <img className="tool-icon" src={resolveIconSrc(t.icon)} alt="" />
+                    </span>
+                    <span className="tool-title-wrap">
+                      <span className="tool-name">{t.name}</span>
+                      <span className="tool-category">{t.category}</span>
+                    </span>
+                  </span>
+                  <span className="tool-desc">{t.description}</span>
+                  {tags}
+                  {trail}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
